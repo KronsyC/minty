@@ -1,0 +1,27 @@
+{
+  "name": "testing",
+  "version": "1.0.0",
+  "description": "> TODO: description",
+  "author": "KronsyC <87078913+KronsyC@users.noreply.github.com>",
+  "homepage": "",
+  "license": "ISC",
+  "main": "lib/testing.js",
+  "directories": {
+    "lib": "lib",
+    "test": "__tests__"
+  },
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "dev": "ts-node-dev ./src/index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.10",
+    "ts-node-dev": "^1.1.8",
+    "typescript": "^4.5.5"
+  },
+  "dependencies": {
+    "http": "^0.0.1-security"
+  }
+}
