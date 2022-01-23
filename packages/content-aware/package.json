@@ -1,7 +1,7 @@
 {
   "name": "@mintyjs/content-aware",
   "version": "1.0.1",
-  "description": "",
+  "description": "Serialize and get the MIME type of any data",
   "keywords": [
     "Content-type",
     "minty",
@@ -39,5 +39,5 @@
   "publishConfig": {
     "access": "public"
   },
-  "gitHead": "27f5f23ff4f719bc2c05af95e020b7f6b44c985d"
+  "gitHead": "cdc3b41cb7c0f0aeee2fe84152f09b9fc68e46e5"
 }

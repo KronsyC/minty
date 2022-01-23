@@ -1,11 +1,27 @@
-# `content-aware`
+# @mintyjs/content-aware
 
 > TODO: description
 
 ## Usage
 
-```
-const contentAware = require('content-aware');
+```typescript
+import contentAware from "@mintyjs/content-aware"
 
-// TODO: DEMONSTRATE API
+const data = {
+    hello: "World"
+}
+const schema = {
+    type: "object",
+    properties: {
+        hello: {
+            type: "string"
+        }
+    }
+}
+
+const [response, contentType] = contentAware(data, schema)
+
+console.log(response) // `{"hello":"World"}`
+console.log(contentType) // `application/json`
+
 ```
