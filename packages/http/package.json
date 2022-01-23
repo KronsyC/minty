@@ -13,11 +13,11 @@
     "dev": "ts-node-dev ./src/index.ts"
   },
   "directories": {
-    "lib": "lib",
+    "lib": "src",
     "test": "__tests__"
   },
   "files": [
-    "lib"
+    "dist"
   ],
   "publishConfig": {
     "access": "public"

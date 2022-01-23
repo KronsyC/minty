@@ -1,5 +1,6 @@
 {
   "name": "testing",
+  "private": true,
   "version": "1.0.0",
   "description": "> TODO: description",
   "author": "KronsyC <87078913+KronsyC@users.noreply.github.com>",
@@ -22,6 +23,8 @@
     "typescript": "^4.5.5"
   },
   "dependencies": {
+    "fastify": "^3.27.0",
+    "fastify-response-time": "^1.1.0",
     "http": "^0.0.1-security"
   }
 }

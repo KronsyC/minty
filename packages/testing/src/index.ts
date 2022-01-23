@@ -1,7 +1,14 @@
-import Server from "../../http/src/Server"
+import fastify from "fastify";
+
+const app = fastify()
 
 
-const app = new Server({})
+app.get("/", async(req, res) => {
+    const response = 12345
+    return response
+})
 
-
-app.listen(3000)
+app.listen(3000, (err)=>{
+    console.log("server listening on port 3000");
+    
+})
