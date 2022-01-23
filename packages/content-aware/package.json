@@ -36,5 +36,7 @@
     "fast-json-stringify": "^3.0.2",
     "is-json": "^2.0.1"
   },
-  "gitHead": "0b969d742fed6112ad09132d108f721ce0f21148"
+  "publishConfig": {
+    "access": "public"
+  }
 }
