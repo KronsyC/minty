@@ -1,6 +1,6 @@
 # @mintyjs/content-aware
 
-> TODO: description
+## Serialize and get the MIME type of any data
 
 ## Usage
 
