@@ -1,6 +1,6 @@
 {
   "name": "@mintyjs/content-aware",
-  "version": null,
+  "version": "1.0.0",
   "description": "",
   "keywords": [
     "Content-type",
@@ -11,7 +11,8 @@
   ],
   "scripts": {
     "test": "echo \"Error: run tests from root\" && exit 1",
-    "dev": "ts-node-dev ./src/index.ts"
+    "dev": "ts-node-dev ./src/index.ts",
+    "build": "tsc"
   },
   "author": "KronsyC <87078913+KronsyC@users.noreply.github.com>",
   "homepage": "https://github.com/mintyjs/content-aware",
@@ -34,5 +35,6 @@
   "dependencies": {
     "fast-json-stringify": "^3.0.2",
     "is-json": "^2.0.1"
-  }
+  },
+  "gitHead": "0b969d742fed6112ad09132d108f721ce0f21148"
 }
