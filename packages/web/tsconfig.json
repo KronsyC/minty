@@ -3,12 +3,25 @@
         "module": "commonjs",
         "declaration": true,
         "noImplicitAny": true,
+        "alwaysStrict": true,
+        "noUncheckedIndexedAccess": true,
+        "strictNullChecks": true, 
+        "noImplicitThis": true,
+        "strictPropertyInitialization": true,
         "removeComments": true,
         "noLib": false,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "target": "ES6",
-        "lib": ["ES6"]
+        "lib":[
+            "ES6"
+        ],
+        "rootDir": "./src",
+        "outDir": "./dist",
     },
-    "exclude": ["node_modules", "**/*.spec.ts"]
+    "exclude": [
+        "node_modules",
+        "**/*.spec.ts",
+        "./dist/**/*"
+    ]
 }

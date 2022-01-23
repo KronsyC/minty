@@ -25,13 +25,13 @@
 ## Example (Typescript)
 
 ```typescript
-import Server, { HttpRequest, HttpResponse } from "@mintyjs/http"
+import Server, { Request, Response } from "@mintyjs/http"
 
-async function listener(req: HttpRequest, res: HttpResponse){
-    res.send("Hello World!")  
+function listener(req: Request, res: Response){
+    res.end("Hello World!")  
 }
 
-const app = new Server(listener)
+const app = new Server({}, listener)
 
 app.listen(3000, (url) => {
     console.log(`Server listening at ${url}`)
@@ -42,13 +42,13 @@ app.listen(3000, (url) => {
 ## Example (Javascript)
 
 ```typescript
-import Server from "@mintyjs/http"
+const Server = require("@mintyjs/http")
 
-async function listener(req, res){
-    res.send("Hello World!")    
+function listener(req, res){
+    res.end("Hello World!")  
 }
 
-const app = new Server(listener)
+const app = new Server({}, listener)
 
 app.listen(3000, (url) => {
     console.log(`Server listening at ${url}`)
