@@ -1,6 +1,6 @@
 {
   "name": "@mintyjs/web",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "A Lightweight web library",
   "keywords": [
     "web",
@@ -15,7 +15,7 @@
     "dev": "ts-node-dev ./src/index.ts"
   },
   "dependencies": {
-    "@mintyjs/http": "^1.1.0"
+    "@mintyjs/http": "^1.0.3"
   },
   "author": "KronsyC <87078913+KronsyC@users.noreply.github.com>",
   "homepage": "https://github.com/mintyjs/web",
@@ -32,7 +32,6 @@
     "type": "git",
     "url": "git+https://github.com/mintyjs/minty.git"
   },
-
   "bugs": {
     "url": "https://github.com/mintyjs/minty/issues"
   }

@@ -1,6 +1,6 @@
 {
   "name": "@mintyjs/content-aware",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Serialize and get the MIME type of any data",
   "keywords": [
     "Content-type",
