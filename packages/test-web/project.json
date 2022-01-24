@@ -1,0 +1,32 @@
+{
+  "root": "packages/test-web",
+  "sourceRoot": "packages/test-web/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/test-web",
+        "main": "packages/test-web/src/index.ts",
+        "tsConfig": "packages/test-web/tsconfig.app.json",
+        "assets": ["packages/test-web/*.md"]
+      }
+    },
+    "serve": {
+      "executor": "@nrwl/js:node",
+      "options": {
+        "buildTarget": "test-web:build"
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/packages/test-web"],
+      "options": {
+        "jestConfig": "packages/test-web/jest.config.js",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+}
