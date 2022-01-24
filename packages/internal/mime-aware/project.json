@@ -1,0 +1,23 @@
+{
+  "root": "packages/internal/mime-aware",
+  "sourceRoot": "packages/internal/mime-aware/src",
+  "projectType": "library",
+  "targets": {
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/internal/mime-aware/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/packages/internal/mime-aware"],
+      "options": {
+        "jestConfig": "packages/internal/mime-aware/jest.config.js",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+}

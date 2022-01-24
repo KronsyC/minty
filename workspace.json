@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "projects": {
+    "http": "packages/http",
+    "internal-mime-aware": "packages/internal/mime-aware",
+    "web": "packages/web"
+  }
+}
