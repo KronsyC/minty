@@ -1,0 +1,8 @@
+{
+  "name": "@mintyjs/http",
+  "version": "0.0.1",
+  "type": "commonjs",
+  "devDependencies": {
+    "@types/node": "^17.0.10"
+  }
+}
