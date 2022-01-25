@@ -1,3 +1,2 @@
-import { testWeb } from './app/TestWeb';
+import './app/TestWeb';
 
-console.log(`Running ${testWeb()}`);

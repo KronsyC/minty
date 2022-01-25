@@ -1,2 +1,12 @@
 import Server from "./lib/Server"
-export default Server
+
+
+const app = new Server()
+
+
+
+
+app.listen(3000, (url)=>{
+    console.log(`Server listening at ${url}`);
+    
+})

@@ -3,9 +3,10 @@
   "version": "0.0.1",
   "type": "commonjs",
   "devDependencies": {
-    "@types/node": "^17.0.10",
+    "@types/node": "^17.0.10"
   },
   "dependencies": {
-    "find-my-way": "^5.1.1"
+    "find-my-way": "^5.1.1",
+    "print-tree": "^0.1.5"
   }
 }

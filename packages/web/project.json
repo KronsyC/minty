@@ -20,6 +20,12 @@
         "lintFilePatterns": ["packages/web/**/*.ts"]
       }
     },
+    "serve": {
+      "executor": "@nrwl/js:node",
+      "options": {
+        "buildTarget": "web:build"
+      }
+    },
     "test": {
       "executor": "@nrwl/jest:jest",
       "outputs": ["coverage/packages/web"],
