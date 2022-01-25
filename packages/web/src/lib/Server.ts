@@ -11,13 +11,19 @@ export default class MintyWeb{
         this.router=new Router({})
         this.baseServer = new HttpServer({}, (req, res)=> this.listener(req,res))
 
-        this.router.addRoute("GET", "/api/posts/123", () => "Get Post 123")
-        this.router.addRoute("PUT", "/api/posts/123", () => "Edit Post 123")
-        this.router.addRoute("GET", "/api/users/12", ()=>"get user 12")
-        this.router.addRoute("POST", "/api/analytics", ()=>"analytics")
-        this.router.addRoute("POST", "/api/auth", ()=>"login route")
+        this.router.addRoute("/api/posts/abc","GET", () => "Get post abc")
+        this.router.addRoute("/api/posts/post-:postid","GET", () => "Get post by id")
+        this.router.addRoute("/api/posts/:postid","GET",  () => "GET Post unknown")
+        this.router.addRoute("/api/users/12", "GET", ()=>"get user 12")
+        this.router.addRoute("/api/analytics","POST", ()=>"analytics")
+        this.router.addRoute("/api/auth",     "POST", ()=>"login with credentials")
+        this.router.addRoute("/api/auth",     "GET", ()=>"Fetch access token with refresh token")
 
+        
+        const hndlr = this.router.find("/api/posts/post-4", "GET")()
 
+        console.log(`FOUND ROUTE HANDLER -- ${hndlr}`);
+        
     }
 
     private listener(req:Request,res:Response){
