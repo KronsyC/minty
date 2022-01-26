@@ -20,6 +20,18 @@ class TrieNode {
   value?: any;
   name: string;
 
+
+  constructor(name: string, terminal: boolean, handler?: Function) {
+    this.children = [];
+    this.name = name;
+    this.terminal = terminal;
+
+    if (!terminal && handler) {
+      throw new Error('Cannot have handler on non-terminal node');
+    } else if (terminal && handler) {
+      this.handler = handler;
+    }
+  }
   private isMatch(route: string, template: string): boolean {
     function extractPath(path: string): string[] {
       let list = [];
@@ -76,17 +88,6 @@ class TrieNode {
 
     return false;
   }
-  constructor(name: string, terminal: boolean, handler?: Function) {
-    this.children = [];
-    this.name = name;
-    this.terminal = terminal;
-
-    if (!terminal && handler) {
-      throw new Error('Cannot have handler on non-terminal node');
-    } else if (terminal && handler) {
-      this.handler = handler;
-    }
-  }
   addChild(node: TrieNode) {
     this.children.push(node);
   }
@@ -95,20 +96,25 @@ class TrieNode {
 
     for (const nam of childrenNames) {
       // Only operate on dynamic paths
-      if (!exact) {
-        if (nam.includes(':')) {
+      if (!exact && nam.includes(':')) {
           const matches = this.isMatch(name, nam);
           if (matches) {
             return true;
-          }
         }
       }
     }
     return childrenNames.includes(name);
   }
   getChild(name: string): TrieNode {
-    const childrenNames = this.children.map((c) => c.name);
 
+    for(const child of this.children){
+      if(!(child.name.includes("+")||child.name.includes("-")) && child.name.startsWith(":")){
+        const e = this.children.splice(this.children.indexOf(child), 1)[0]
+        this.children.push(e)
+      }
+    }
+
+    const childrenNames = this.children.map((c) => c.name);
     if (childrenNames.includes(name)) {
       for (const child of this.children) {
         if (child.name === name) {
