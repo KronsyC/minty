@@ -1,5 +1,5 @@
 import HttpServer, { Request, Response } from "@mintyjs/http"
-import Router from "./Router"
+import Router from "./router/Router"
 // import contentAware from "@mintyjs/mime-aware"
 
 
@@ -11,10 +11,10 @@ export default class MintyWeb{
         this.router=new Router({})
         this.baseServer = new HttpServer({}, (req, res)=> this.listener(req,res))
 
+        this.router.addRoute("/api/posts/:id","GET", () => "Get post by id")
+        this.router.addRoute("/api/posts/foo-:id","GET", () => "Get post by id foo")
+        this.router.addRoute("/api/posts/:id-bar","GET", () => "Get post by id bar")
         this.router.addRoute("/api/posts/abc","GET", () => "Get post abc")
-        this.router.addRoute("/api/posts/:postid","GET",  () => "GET Post unknown")
-        this.router.addRoute("/api/posts/post-:postid","GET", () => "Get post by id")
-        this.router.addRoute("/api/posts/get-:postid+post","GET", () => "Get post test")
 
         this.router.addRoute("/api/users/12", "GET", ()=>"get user 12")
         this.router.addRoute("/api/analytics","POST", ()=>"analytics")
@@ -22,7 +22,7 @@ export default class MintyWeb{
         this.router.addRoute("/api/auth",     "GET", ()=>"Fetch access token with refresh token")
 
         
-        const hndlr = this.router.find("/api/posts/get-123+post", "GET")()
+        const hndlr = this.router.find("/api/posts/abc", "GET")()
 
         console.log(`FOUND ROUTE HANDLER -- ${hndlr}`);
         
