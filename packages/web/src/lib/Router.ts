@@ -1,6 +1,6 @@
 import { Method } from '@mintyjs/http';
 import printTree from './printTree';
-
+// TODO: Make this less awful
 export const methods = [
   'GET',
   'POST',
@@ -12,7 +12,7 @@ export const methods = [
   'HEAD',
   'CONNECT',
 ];
-// Radix tree based routing based heavily off of fastify's router
+// Radix tree based routing
 class TrieNode {
   terminal: boolean; // Is this node the end of a path
   children: TrieNode[];
@@ -106,7 +106,7 @@ class TrieNode {
     }
     return childrenNames.includes(name);
   }
-  getChild(name: string, exact: boolean = false): TrieNode {
+  getChild(name: string): TrieNode {
     const childrenNames = this.children.map((c) => c.name);
 
     if (childrenNames.includes(name)) {
@@ -159,7 +159,7 @@ export default class Router {
     let currentNode: TrieNode = this.radixTree;
     location.forEach((part, index) => {
       if (currentNode.hasChild(part, true)) {
-        currentNode = currentNode.getChild(part, true);
+        currentNode = currentNode.getChild(part);
 
         // if it's the last child, set it as a terminal and add method
         if (index === location.length - 1) {
