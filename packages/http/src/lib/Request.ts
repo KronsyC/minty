@@ -1,4 +1,4 @@
-import { BaseRequest as BaseRequest } from '../util/types';
+import { BaseRequest as BaseRequest, Method } from '../util/types';
 type RequestEvent =
     | 'aborted'
     | 'close'
@@ -85,8 +85,8 @@ export default class Request {
     get rawHeaders() {
         return this.rawRequest.rawHeaders;
     }
-    get method() {
-        return this.rawRequest.method;
+    get method():Method {
+        return <Method>this.rawRequest.method;
     }
     get url() {
         return this.rawRequest.url || '/';

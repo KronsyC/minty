@@ -244,11 +244,11 @@ export default class Router {
    *
    */
   find(path: string, method: Method) {
-    printTree(
-      this.radixTree,
-      n => n.name.toUpperCase(),
-      n=> n.children
-    )
+    // printTree(
+    //   this.radixTree,
+    //   n => n.name.toUpperCase(),
+    //   n=> n.children
+    // )
     // This function's sole purpose is to make typescript happy FIXME: Find a way to get rid of it
     function thisShouldNotBeRun() {
       console.log('-------- UNEXPECTED ERROR ---------');

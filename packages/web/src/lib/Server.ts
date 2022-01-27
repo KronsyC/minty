@@ -1,4 +1,5 @@
 import HttpServer, { Request, Response } from "@mintyjs/http"
+import mimeAware from "@mintyjs/mime-aware"
 import Router from "./router/Router"
 // import contentAware from "@mintyjs/mime-aware"
 
@@ -10,26 +11,47 @@ export default class MintyWeb{
     constructor() {
         this.router=new Router({})
         this.baseServer = new HttpServer({}, (req, res)=> this.listener(req,res))
-
-        this.router.addRoute("/api/posts/:id","GET", () => "Get post by id")
-        this.router.addRoute("/api/posts/foo-:id","GET", () => "Get post by id foo")
-        this.router.addRoute("/api/posts/:id-bar","GET", () => "Get post by id bar")
-        this.router.addRoute("/api/posts/abc","GET", () => "Get post abc")
-
-        this.router.addRoute("/api/users/12", "GET", ()=>"get user 12")
-        this.router.addRoute("/api/analytics","POST", ()=>"analytics")
-        this.router.addRoute("/api/auth",     "POST", ()=>"login with credentials")
-        this.router.addRoute("/api/auth",     "GET", ()=>"Fetch access token with refresh token")
-
-        
-        const hndlr = this.router.find("/api/posts/abc", "GET")()
-
-        console.log(`FOUND ROUTE HANDLER -- ${hndlr}`);
         
     }
 
     private listener(req:Request,res:Response){
-        res.end("Hello World")
+        try{
+            this.router.find( req.url, req.method )
+        }
+        catch(err:any){
+            console.log(err);
+            if(err.name.startsWith("ERR_")){
+                let errorResponse = {
+                    statusCode: err.statusCode,
+                    error: err.name,
+                    message: err.message
+                }
+                res.statusCode = err.statusCode || 500
+                const [data, mimeType] = mimeAware(errorResponse, {
+                    type: "object",
+                    properties: {
+                        statusCode: {
+                            type: "number"
+                        },
+                        error: {
+                            type: "string"
+                        },
+                        message: {
+                            type: "string"
+                        }
+                    }
+
+                })
+                console.log(mimeType);
+                
+                res.setHeader("content-type", mimeType)
+                res.end(data)
+            }
+
+            res.end(err.name)
+            
+        }
+        
     }
     public listen(port:number, host:string, backlog:number, callback:(host:string)=>void):void
     public listen(port:number, host:string, callback:(host:string)=>void):void
