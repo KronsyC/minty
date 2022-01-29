@@ -3,7 +3,9 @@
   "version": "0.0.1",
   "type": "commonjs",
   "dependencies": {
-    "fast-json-stringify": "^3.0.2"
+    "@types/memoizee": "^0.4.7",
+    "fast-json-stringify": "^3.0.2",
+    "memoizee": "^0.4.15"
   },
   "devDependencies": {
     "@types/node": "^17.0.10"
