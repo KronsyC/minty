@@ -1,5 +1,3 @@
-
-import { createServer } from "http";
 import Server from "./lib/Server";
 
 
@@ -9,17 +7,20 @@ app.addRoute({
     path: "/",
     method: "GET",
     handler: async (req, res) => {
-        return {
-            statusCode: 201,
-            message: "Successfully created profile",
-            data: {
-                name: "KronsyC",
-                email: "test@example.com"
-            }
-        }
+        res.set("x-abc", "def")
+        .status(200)
+        .send("This is the homepage")
     }
 })
-
+app.addRoute({
+    path: "/users",
+    method: "GET",
+    handler: async (req, res) => {
+        res.set("x-abc", "def")
+        .status(200)
+        .send("Get All Users")
+    }
+})
 
 app.listen(3000, "0.0.0.0", (url)=>{
     console.log(`Server listening at ${url}`);

@@ -23,7 +23,7 @@
     "serve": {
       "executor": "@nrwl/js:node",
       "options": {
-        "buildTarget": "web:build"
+        "buildTarget": "web:build" 
       }
     },
     "test": {

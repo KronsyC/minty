@@ -98,7 +98,6 @@ export default function contentAwareSerialize(data: string|object|number|boolean
     }
 
     const contentType = getContentType(data)
-    console.log("generating content type");
     
     if(typeof data === "string"){    
         return [data, contentType]
