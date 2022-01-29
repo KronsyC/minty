@@ -1,4 +1,4 @@
-import mimeAware from '@mintyjs/mime-aware';
+import mimeAware from "./mime"
 import { HandlerCb } from "./types";
 import {Request, Response} from "@mintyjs/http"
 import WebRequest from "./Request";
@@ -20,6 +20,7 @@ export default class Handler{
 
         const data = await this.listener(webReq, webRes)
         const [serialized, mimeType] = await mimeAware(data)
+        
         res.setHeader("content-type", mimeType)
         res.end(serialized)
     }

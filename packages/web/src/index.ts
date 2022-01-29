@@ -10,13 +10,18 @@ app.addRoute({
     method: "GET",
     handler: async (req, res) => {
         return {
-            hello: "world"
+            statusCode: 201,
+            message: "Successfully created profile",
+            data: {
+                name: "KronsyC",
+                email: "test@example.com"
+            }
         }
     }
 })
 
 
-app.listen(3000, (url)=>{
+app.listen(3000, "0.0.0.0", (url)=>{
     console.log(`Server listening at ${url}`);
     
 })

@@ -1,5 +1,5 @@
 import HttpServer, { Method, Request as HttpRequest, Response as HttpResponse } from "@mintyjs/http"
-import mimeAware from "@mintyjs/mime-aware"
+import mimeAware from "./mime"
 import fastJson, { Schema } from "fast-json-stringify"
 import Router from "@mintyjs/router"
 import { HandlerCb } from "./types"
