@@ -88,7 +88,7 @@ function getSerializerType(data:string|object|number|boolean|any[]){
  * @param data The Data you want to serialize
  * @param schema A fast-json-stringify schema
  */
-export default async function contentAwareSerialize(data: string|object|number|boolean|any[], serializer?:(doc:any)=>any) {    
+export default function contentAwareSerialize(data: string|object|number|boolean|any[], serializer?:(doc:any)=>any) {    
     const hasSerializer = Boolean(serializer)
 
     if(!hasSerializer){
@@ -98,7 +98,8 @@ export default async function contentAwareSerialize(data: string|object|number|b
     }
 
     const contentType = getContentType(data)
-
+    console.log("generating content type");
+    
     if(typeof data === "string"){    
         return [data, contentType]
     }

@@ -2,7 +2,6 @@
   "version": 2,
   "projects": {
     "http": "packages/http",
-    "mime-aware": "packages/mime-aware",
     "router": "packages/router",
     "web": "packages/web"
   }

@@ -4,4 +4,6 @@ import contentAwareSerialize from "./mimeAware";
 import { getContentType } from "./mimeAware";
 
 export {getContentType}
-export default memoize(contentAwareSerialize)
+export default memoize(contentAwareSerialize, {
+    primitive:true
+})
