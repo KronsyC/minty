@@ -1,0 +1,1 @@
+export type HandlerCb = (req:any,res:any)=>any

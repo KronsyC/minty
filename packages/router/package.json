@@ -1,0 +1,11 @@
+{
+  "name": "@mintyjs/router",
+  "version": "0.0.1",
+  "type": "commonjs",
+  "dependencies": {
+    "memoizee": "^0.4.15"
+  },
+  "devDependencies": {
+    "@types/memoizee": "^0.4.7"
+  }
+}

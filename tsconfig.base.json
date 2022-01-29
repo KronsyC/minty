@@ -18,6 +18,7 @@
     "paths": {
       "@mintyjs/http": ["packages/http/src/index.ts"],
       "@mintyjs/mime-aware": ["packages/mime-aware/src/index.ts"],
+      "@mintyjs/router": ["packages/router/src/index.ts"],
       "@mintyjs/web": ["packages/web/src/index.ts"]
     }
   },

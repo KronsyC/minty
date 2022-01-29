@@ -1,58 +1,42 @@
-import HttpServer, { Request, Response } from "@mintyjs/http"
+import HttpServer, { Method, Request as HttpRequest, Response as HttpResponse } from "@mintyjs/http"
 import mimeAware from "@mintyjs/mime-aware"
-import Router from "./router/Router"
-// import contentAware from "@mintyjs/mime-aware"
+import { Schema } from "fast-json-stringify"
+// import Handler from "./Handler"
+import Router from "@mintyjs/router"
+import { HandlerCb } from "./types"
 
-
+interface RouteParams{
+    method:Method;
+    path:string;
+    handler:HandlerCb;
+}
 
 export default class MintyWeb{
-    baseServer:HttpServer
-    private router:Router
+    baseServer:HttpServer;
+    // private router:Router<Handler>;
     constructor() {
-        this.router=new Router({})
+        // this.router=new Router({})
         this.baseServer = new HttpServer({}, (req, res)=> this.listener(req,res))
+
+        
+    }
+    private listener(req:HttpRequest,res:HttpResponse){
+        res.end("Hello World")
         
     }
 
-    private listener(req:Request,res:Response){
-        try{
-            this.router.find( req.url, req.method )
-        }
-        catch(err:any){
-            console.log(err);
-            if(err.name.startsWith("ERR_")){
-                let errorResponse = {
-                    statusCode: err.statusCode,
-                    error: err.name,
-                    message: err.message
-                }
-                res.statusCode = err.statusCode || 500
-                const [data, mimeType] = mimeAware(errorResponse, {
-                    type: "object",
-                    properties: {
-                        statusCode: {
-                            type: "number"
-                        },
-                        error: {
-                            type: "string"
-                        },
-                        message: {
-                            type: "string"
-                        }
-                    }
+    // public addRoute(params:RouteParams){
+    //     const pathHandler = new Handler({
+    //         callback: params.handler
+    //     })
+    //     this.router.addRoute(
+    //         params.path,
+    //         params.method,
+    //         pathHandler
+    //     )
+    // }
 
-                })
-                console.log(mimeType);
-                
-                res.setHeader("content-type", mimeType)
-                res.end(data)
-            }
-
-            res.end(err.name)
-            
-        }
-        
-    }
+    //#region listen method
     public listen(port:number, host:string, backlog:number, callback:(host:string)=>void):void
     public listen(port:number, host:string, callback:(host:string)=>void):void
     public listen(port:number, backlog:number, callback:(host:string)=>void):void
@@ -64,4 +48,5 @@ export default class MintyWeb{
     public listen(arg1:any, arg2?:any, arg3?:any, arg4?:any){
         this.baseServer.listen(arg1, arg2, arg3, arg4)
     }
+    //#endregion
 }

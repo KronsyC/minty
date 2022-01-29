@@ -3,7 +3,7 @@
   "projects": {
     "http": "packages/http",
     "mime-aware": "packages/mime-aware",
-    "web": "packages/web",
-    "test-web": "packages/test-web"
+    "router": "packages/router",
+    "web": "packages/web"
   }
 }

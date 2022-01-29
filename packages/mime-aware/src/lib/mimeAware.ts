@@ -36,18 +36,46 @@ export function getContentType(data: string|object|number|boolean|any[]) {
             return 'text/plain';
     }
 }
+
+function getSerializerType(data:string|object|number|boolean|any[]){
+    switch(typeof data){
+        case "string":
+            return "string"
+        case "number":
+            return "number"
+        case "boolean":
+            return "boolean"
+        case "object":
+            if(Array.isArray(data)){
+                return "array"
+            }
+            else{
+                return "object"
+            }
+    }
+}
+
 /**
  * Takes any data, serializes it, and returns it's appropriate MIME type
  *
  * @param data The Data you want to serialize
  * @param schema A fast-json-stringify schema
  */
-export default function contentAwareSerialize(data: string|object|number|boolean|any[], schema: Schema) {
+export default function contentAwareSerialize(data: string|object|number|boolean|any[], schema?: Schema) {
+
+    if(!schema){
+        const type:any = getSerializerType(data)
+        schema = {type : type, additionalProperties: true}
+    }
     const serializer = stringify(schema);
     const contentType = getContentType(data)
+    if(typeof data === "string"){    
+        return [data, contentType]
+    }
     const serialized = serializer(data)
 
     return [serialized, contentType]
+
 }
 
 function isHtml(data: string) {
