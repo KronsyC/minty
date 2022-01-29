@@ -89,31 +89,21 @@ function getSerializerType(data:string|object|number|boolean|any[]){
  * @param schema A fast-json-stringify schema
  */
 export default async function contentAwareSerialize(data: string|object|number|boolean|any[], serializer?:(doc:any)=>any) {    
-    console.time("serializer gen")
     const hasSerializer = Boolean(serializer)
 
     if(!hasSerializer){
-        console.time("Getting Schema Type")
         const type:any = getSerializerType(data)
-        console.timeEnd("Getting Schema Type")
 
-        console.time("fetching schema")
         serializer = pregenSchema(type)
-        console.timeEnd("fetching schema")
     }
-    console.timeEnd("serializer gen")
 
-    console.time("Get Content Type")
     const contentType = getContentType(data)
-    console.timeEnd("Get Content Type")
 
     if(typeof data === "string"){    
         return [data, contentType]
     }
     else{      
-        console.time("serializing")
         const serialized = serializer!(data)
-        console.timeEnd("serializing")
 
         return [serialized, contentType]
     }

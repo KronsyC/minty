@@ -40,8 +40,8 @@ export default class MintyWeb{
     private async listener(req:HttpRequest,res:HttpResponse){
         try{
             const handler = this.router.find(req.url, req.method)
+
             handler.handle(req, res)
-            // res.end("Hello World")
 
 
             

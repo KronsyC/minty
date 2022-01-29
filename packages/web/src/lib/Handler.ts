@@ -19,10 +19,7 @@ export default class Handler{
         const webRes = new WebResponse(res)
 
         const data = await this.listener(webReq, webRes)
-        console.time("mimeAware")
         const [serialized, mimeType] = await mimeAware(data)
-        console.timeEnd("mimeAware")
-
         res.setHeader("content-type", mimeType)
         res.end(serialized)
     }
