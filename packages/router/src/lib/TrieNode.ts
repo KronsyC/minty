@@ -1,4 +1,6 @@
 
+import ERR_METHOD_NOT_ALLOWED from "../errors/ERR_METHOD_NOT_ALLOWED";
+import ERR_NOT_FOUND from "../errors/ERR_NOT_FOUND";
 import Router from "./Router";
 import { Method } from "./types";
 
@@ -172,5 +174,19 @@ export default class TrieNode<HT> {
         currentHandlers[method] = handler
         this.handlers = currentHandlers
         this.terminal = true
+    }
+
+    getHandler(method:Method){
+        if(this.handlers){
+            let handler = this.handlers[method]
+            if(!handler){
+                handler = this.handlers["ALL"]
+            }
+            if(!handler){
+                throw new ERR_METHOD_NOT_ALLOWED()
+            }
+            return handler
+        }
+        throw new ERR_NOT_FOUND()
     }
 }
