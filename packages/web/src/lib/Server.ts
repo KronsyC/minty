@@ -7,7 +7,7 @@ export default class Server extends Application {
   baseServer: HttpServer;
 
   constructor() {
-    super({prefix: ""});
+    super();
     this.baseServer = new HttpServer({}, (req, res) => this.listener(req, res));
   }
 

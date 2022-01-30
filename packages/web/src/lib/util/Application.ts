@@ -14,46 +14,48 @@ interface RouteParams {
     path: string;
     handler: HandlerCb;
 }
-interface UsePluginOptions {
-    prefix: string;
-}
 interface AppOptions {
-    prefix?: string;
     router?:Router<Handler>
 }
 export default class Application {
+    //#region constructor
     protected router: Router<Handler>;
     protected errorSerializer = createErrorSerializer();
     protected state: 'ready' | 'building' = 'building';
-    protected prefix: string = '';
-    constructor(opts?: AppOptions) {
-        if(opts?.router){
-            this.router=opts.router
-        }
-        else{
-            this.router=new Router({})
-        }
-        if(opts?.prefix){
-            this.prefix=opts.prefix
-        }
+    protected _prefix: string = '';
+    protected set prefix(prefix:string){
+        this._prefix = prefix
+        this.router.prefix = prefix
+        
     }
+    protected get prefix(){
+        return this._prefix
+    }
+    constructor(opts?: AppOptions) {
+        this.router = new Router({})
+    }
+    //#endregion
 
-    public addPlugin(plugin:typeof Plugin){
-        const pluggable = new plugin()
-        const prefix = pluggable.prefix
+    public addPlugin(pluggable:typeof Plugin){
+        const plugin = new pluggable()
+        plugin.preLoad()
+        plugin.router.parentRouter = this.router
+        plugin.register()
+        this.router.addSubrouter(plugin.router)
+        
 
     }
 
     public addRoute(params: RouteParams) {
         if (this.state === 'ready') {
             throw new Error(
-                'Cannot Register new listeners once server has started'
+                'Cannot Register new listeners once app has started'
             );
         }
         const pathHandler = new Handler({
             listener: params.handler,
         });
-        this.router.addRoute(this.prefix+params.path, params.method, pathHandler);
+        this.router.addRoute(params.path, params.method, pathHandler);
     }
 
     //#region method abstractions

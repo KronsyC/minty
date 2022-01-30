@@ -1,8 +1,10 @@
-import { Method } from '@mintyjs/http';
+
 import ERR_METHOD_NOT_ALLOWED from '../errors/ERR_METHOD_NOT_ALLOWED';
 import ERR_NOT_FOUND from '../errors/ERR_NOT_FOUND';
+import LERR_DUPLICATE_ROUTES from '../errors/LERR_DUPLICATE_ROUTES';
 import printTree from './printTree';
-
+import TrieNode from "./TrieNode"
+import { Method } from './types';
 
 // Small utility function to trim trailing and leading slashes
 function trimPath(path: string, ignoreTrailingSlash:boolean) {
@@ -12,245 +14,104 @@ function trimPath(path: string, ignoreTrailingSlash:boolean) {
   if (path.endsWith('/')&&ignoreTrailingSlash) {
     path = path.slice(0, path.length - 1);
   }
-  return path;
+  const parts = path.split("/")
+  parts.forEach((part, index)=> {
+    if(part===""){
+      parts.splice(index, 1)
+    }
+  })
+  return parts.join("/");
 }
-
 interface RouterConfig{
   ignoreTrailingSlash?:boolean;
-  parameterSeparators?:string[]
+  parameterSeparators?:string[];
+  prefix?:string;
 }
-interface PathHandlers<HT>{
-  GET?:HT
-  POST?:HT
-  PUT?:HT
-  DELETE?:HT
-  PATCH?:HT
-  OPTIONS?:HT
-  TRACE?:HT
-  HEAD?:HT
-  CONNECT?:HT
-  ALL?:HT
-}
-
-// Radix tree based routing
-class TrieNode <HT> {
-  terminal: boolean; // Is this node the end of a path
-  children: TrieNode<HT>[];
-  handlers?: PathHandlers<HT>;
-  value?: any;
-  name: string;
-  router:Router<HT>
-
-  /**
-   * 
-   * @param router An Instance of a Router
-   * @param name The Name of the route segment
-   * @param handlers An Object Representing the mappings of HTTP methods to The Chosen Handler Type
-   */
-  constructor(router:Router<HT>, name: string, handlers?: PathHandlers<HT>) {
-    this.router=router    
-    this.children = [];
-    this.name = name;
-
-    if(handlers){
-      this.terminal=true
-      this.handlers=handlers
-    }
-    else{
-      this.terminal=false
-    }
-  }
-  private extractPath(path: string): string[] {
-    let list = [];
-    let tmp: string = '';
-    for (let char of path) {
-      if (this.router["parameterSeparators"].includes(char)) {
-        list.push(tmp);
-        list.push(char);
-        tmp = '';
-      } else {
-        tmp += char;
-      }
-    }
-    if (tmp) {
-      list.push(tmp);
-    }
-    return list;
-  }
-  private routePartsMatch(
-    routeParts: string[],
-    templateParts: string[]
-  ): boolean {
-    if (routeParts.length === templateParts.length) {
-      for (let i = 0; i < routeParts.length; i++) {
-        let routePart = routeParts[i];
-        let templatePart = templateParts[i];
-
-        if (!templatePart.startsWith(':') && routePart !== templatePart) {
-          return false;
-        }
-      }
-    } else {
-      return false;
-    }
-    return true
-  }
-  private isMatch(route: string, template: string): boolean {
-    // Check if two route segments match
-    if(!this.router["parameterSeparators"].map(s=>template.includes(s)).includes(true)) {
-      
-      if (template.startsWith(':')) {
-        return true;
-      }
-    } else {
-      const routeParts = this.extractPath(route);
-      const templateParts = this.extractPath(template);
-
-      let matches = this.routePartsMatch(routeParts, templateParts);
-
-      return matches;
-    }
-
-    return false;
-  }
-  addChild(node: TrieNode<HT>) {
-    this.children.push(node);
-  }
-  /**
-   * 
-   * @param name 
-   * @param exact This parameter prevents pattern matching
-   * @returns 
-   */
-  hasChild(name: string, exact:boolean=false) {
-    let childrenNames = this.children.map((c) => c.name);
-
-    if(childrenNames.includes(name)){
-      return true
-    }
-    for (const template of childrenNames) {
-      // Only operate on dynamic paths
-      if (template.includes(':') && !exact) {
-          const matches = this.isMatch(name, template);
-          if (matches) {
-            return true;
-        }
-      }
-    }
-    return false
-  }
-  getChild(name: string): TrieNode<HT> {
-      // Moves catchall routes to the end of the array, i.e lowest priority
-      for(const child of this.children){
-        if(!(child.name.includes("+")||child.name.includes("-")) && child.name.startsWith(":")){
-          const e = this.children.splice(this.children.indexOf(child), 1)[0]
-          this.children.push(e)
-        }
-      }
-
-      const childrenNames = this.children.map((c) => c.name);
-      if (childrenNames.includes(name)) {
-        for (const child of this.children) {
-          if (child.name === name) {
-            return child;
-          }
-        }
-      } else {
-        for (const child of this.children) {
-          if (child.name.includes(':')) {
-            const doRoutesMatch = this.isMatch(name, child.name);
-            if (doRoutesMatch) {
-
-              return child;
-            }
-          }
-        }
-      }
-                return this;
-
-  }
-  hasTerminalChild() {
-    let childNames = this.children.map((c) => c.terminal);
-    return childNames.includes(true);
-  }
-}
-
-
 
 export default class Router<HT> {
 
+  //#region constructor
   private radixTree: TrieNode<HT>; // The root node of the tree
-  private ignoreTrailingSlash:boolean=true;
-  private parameterSeparators:string[] = ["-", "+"]
+  public ignoreTrailingSlash:boolean=true;
+  public parameterSeparators:string[] = ["-", "+"]
   constructor(config: RouterConfig) {
     config.ignoreTrailingSlash?this.ignoreTrailingSlash=config.ignoreTrailingSlash:null
     config.parameterSeparators?this.parameterSeparators=config.parameterSeparators:null
-
     this.radixTree = new TrieNode(this, 'root');
+    this.radixTree.rootNode=true
+    this.prefix = config.prefix || "/"
   }
+  //#endregion
+  parentRouter?:Router<HT>
+  private _prefix:string="/";
+  get prefix(){
+    return this._prefix
+  }
+  set prefix(pfix:string){
+    this._prefix = pfix
+    this.radixTree.name = pfix
+  }
+  private _addRoute(path: string, method: Method, handler: HT){
+    const location = path.split('/');
+    
+    if(location[0]===""){
+      
+      this.radixTree.addHandler(method, handler)
+    }
+    else{
+      let currentNode: TrieNode<HT> = this.radixTree;
+      location.forEach((part, index) => {
+        if (currentNode.hasChild(part, true)) {
+          currentNode = currentNode.getChild(part);
+  
+          // if it's the last child, set it as a terminal and add method
+          if (index === location.length - 1) {
+            currentNode.terminal = true;
+            if(currentNode.handlers){
+              if(!currentNode.handlers[method]){
+                currentNode.handlers[method] = handler
+              }
+              else{
+                throw new LERR_DUPLICATE_ROUTES(`Duplicate Handlers registered for ${method} ${path}`)
+              }
+            }
+            else{
+              let hndlr:any = {}
+              hndlr[method]=handler
+              currentNode.handlers = hndlr
+            }
+          }
+        } 
+        else {
+          // If last part, generate terminal and add methods
+          if (index === location.length - 1) {
+            let hndlr:any={}
+            hndlr[method]=handler
+            currentNode.addChild(new TrieNode(this, part, hndlr));
+          } else {
+            // Generate empty node
+  
+            currentNode.addChild(new TrieNode(this,part));
+          }
+          currentNode = currentNode.getChild(part);
+        }
+      });
+    }
 
+  }
   addRoute(path: string, method: Method, handler: HT) {
     path = trimPath(path, this.ignoreTrailingSlash);
-    const location = path.split('/');
-
-    let currentNode: TrieNode<HT> = this.radixTree;
-    location.forEach((part, index) => {
-      if (currentNode.hasChild(part, true)) {
-        currentNode = currentNode.getChild(part);
-
-        // if it's the last child, set it as a terminal and add method
-        if (index === location.length - 1) {
-          currentNode.terminal = true;
-          if(currentNode.handlers){
-            currentNode.handlers[method] = handler
-          }
-          else{
-            let hndlr:any = {}
-            hndlr[method]=handler
-            currentNode.handlers = hndlr
-          }
-        }
-      } 
-      else {
-        // If last part, generate terminal and add methods
-        if (index === location.length - 1) {
-          let hndlr:any={}
-          hndlr[method]=handler
-          currentNode.addChild(new TrieNode(this, part, hndlr));
-        } else {
-          // Generate empty node
-
-          currentNode.addChild(new TrieNode(this,part));
-        }
-        currentNode = currentNode.getChild(part);
-      }
-    });
+    this._addRoute(path, method, handler)
   }
 
-  /**
-   *
-   * @description Gets the handler associated with an action
-   * @summary
-   * Takes a path and method, and returns a handler
-   * - Throws ERR_METHOD_NOT_ALLOWED if the route does not support the specified method
-   * - Throws ERR_NOT_FOUND if the route doesn't have any handlers
-   *
-   * @param path The path you want to fetch a handler for
-   * @param method The HTTP method of the route
-   *
-   */
-  find(path: string, method: Method) : HT {
-    printTree(
-      this.radixTree,
-      n => n.name.toUpperCase(),
-      n=> n.children
-    )
+  private _find(path:string, method:Method):HT{
+
     path = trimPath(path, this.ignoreTrailingSlash)
     const parts = path.split('/');
 
     let current = this.radixTree;
     let handler: any;
-    let wildcard:TrieNode<HT>;
+    let wildcard:TrieNode<any>;
     parts.forEach((part, index) => {
         
       if(current.hasChild("*")){
@@ -301,5 +162,56 @@ export default class Router<HT> {
       }
     });
     return handler;
+  }
+  /**
+   * @description Gets the handler associated with an action
+   * @summary
+   * Takes a path and method, and returns a handler
+   * - Throws ERR_METHOD_NOT_ALLOWED if the route does not support the specified method
+   * - Throws ERR_NOT_FOUND if the route doesn't have any handlers
+   *
+   * @param path The path you want to fetch a handler for
+   * @param method The HTTP method of the route
+   */
+  find(path: string, method: Method) : HT {
+    printTree(
+      this.radixTree,
+      node=> `${node.name} -- ${Object.keys(node.handlers||{}).map(k=>k)}`,
+      n=>n.children
+      )
+    const handler = this._find(path, method)
+      return handler
+  }
+  migrate(){
+    if(!this.parentRouter){
+      throw new Error("Cannot Migrate Without a Parent Router")
+    }
+    const parent = this.parentRouter
+    // Traverse the Radix tree and write it to the parent router under the prefix
+    const writeChildrenToPath = (node:TrieNode<HT>, prefix:string) => {
+      const path = prefix+"/" + node.name
+      
+      if(node.terminal && node.handlers){
+        
+        
+        for( let [method, handler] of Object.entries(node.handlers)){
+          parent.addRoute(path, <any>method, handler)
+        }
+      }
+      for(let child of node.children){
+        writeChildrenToPath(child, path)
+      }
+    }
+    writeChildrenToPath(this.radixTree, "/")
+  }
+  /**
+   * Routers can have scoped child routers which write their routes to the parent under a prefix
+   * @param path The Base Path of the new Router
+   * @param router The Child Router Object
+   */
+  addSubrouter(router:Router<HT>){
+    // Initialize a Handler to wrap the subrouter
+    router.parentRouter = this
+    router.migrate() // Migrate to the parent router under the given prefix
   }
 }

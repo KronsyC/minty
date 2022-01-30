@@ -1,39 +1,54 @@
 import Server from "./lib/Server";
 import Plugin from "./lib/util/Plugin";
-class ResponseTime extends Plugin{
-    constructor(){
-        super({
-            prefix: "/api/headers"
-        })
-    }
+class Headers extends Plugin{
 
+    override preLoad(): void {
+        this.prefix = "headers"
+    }
     override register(): void {
-        this.get("/", async(req, res) => {
+        console.log("Registering Headers plugin");
+        this.get("/", async(req, res)=>{
             res.send(req.headers)
+        })
+
+        this.post("/", async(req, res)=>{
+            return "Create Headers"
+        })
+        this.get("/:name", async(req, res)=>{
+            return "Get Headers by name"
         })
     }
     
 }
+class API extends Plugin{
+    override preLoad(): void {
+        this.prefix = "api"
+    }
+    override register(): void {
+        this.get("/", async(req, res)=>{
+            res.send("API Plugin")
+        })
+    }
+}
 
 const app = new Server()
 
-app.addPlugin(ResponseTime)
+app.addPlugin(Headers)
+app.addPlugin(API)
 
 app.get("/", async (req, res)=>{
     res.status(200)
-    .send("Hello World")
+    .send("Homepage")
 })
 app.get("/users", async(req, res)=> {
     res.status(200)
     .send("Get All Users")
 })
+app.post("/users", async(req, res)=> {
+    res.status(200)
+    .send("Create user")
+})
 
-app.get("/api/*", async(req, res)=>{
-    res.status(200).send("API")
-})
-app.get("/api/abc/*", async(req, res)=>{
-    res.status(200).send("API abc")
-})
 
 app.listen(3000, "0.0.0.0", (url)=>{
     console.log(`Server listening at ${url}`);
