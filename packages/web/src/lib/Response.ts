@@ -14,7 +14,9 @@ export default class WebResponse{
     private set sendCallback(func:(data:any)=>void){
         this._sendCallback=func
     }
-
+    get statusCode(){
+        return this.rawResponse.statusCode
+    }
     status(code:number){
         this.rawResponse.statusCode = code
         return this

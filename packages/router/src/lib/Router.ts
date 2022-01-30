@@ -29,6 +29,7 @@ interface PathHandlers<HT>{
   TRACE?:HT
   HEAD?:HT
   CONNECT?:HT
+  ALL?:HT
 }
 
 // Radix tree based routing
@@ -97,7 +98,6 @@ class TrieNode <HT> {
   private isMatch(route: string, template: string): boolean {
     // Check if two route segments match
     if(!this.router["parameterSeparators"].map(s=>template.includes(s)).includes(true)) {
-      console.log(template);
       
       if (template.startsWith(':')) {
         return true;
@@ -240,22 +240,26 @@ export default class Router<HT> {
    *
    */
   find(path: string, method: Method) : HT {
-    // printTree(
-    //   this.radixTree,
-    //   n => n.name.toUpperCase(),
-    //   n=> n.children
-    // )
+    printTree(
+      this.radixTree,
+      n => n.name.toUpperCase(),
+      n=> n.children
+    )
     path = trimPath(path, this.ignoreTrailingSlash)
     const parts = path.split('/');
 
     let current = this.radixTree;
     let handler: any;
-
+    let wildcard:TrieNode<HT>;
     parts.forEach((part, index) => {
-      if (current.hasChild(part)) {
         
-        current = current.getChild(part);
+      if(current.hasChild("*")){
+        wildcard=current.getChild("*")
+      }
 
+      if (current.hasChild(part)) {        
+        current = current.getChild(part);
+        
         // If this is the last path part, return the handler
         if (index === parts.length - 1 && current.handlers) {
           
@@ -263,6 +267,9 @@ export default class Router<HT> {
             if(methodHandler){
               
               handler=methodHandler
+            }
+            else if (current.handlers["ALL"]){
+              handler=current.handlers["ALL"]
             }
             else{
               throw new ERR_METHOD_NOT_ALLOWED()
@@ -275,7 +282,19 @@ export default class Router<HT> {
           // Do Nothing
         }
       }
-      // Error Handling
+      else if (wildcard){
+        
+        let methodHandler = wildcard.handlers?wildcard.handlers[method]:undefined
+        if(methodHandler){
+          handler=methodHandler
+        }
+        else if (wildcard.handlers&&wildcard.handlers["ALL"]){
+          handler=wildcard.handlers["ALL"]
+        }
+        else{
+          throw new ERR_METHOD_NOT_ALLOWED()
+        }
+      }
       else {
         throw new ERR_NOT_FOUND()
         

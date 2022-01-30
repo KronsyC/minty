@@ -1,11 +1,10 @@
-import mimeAware from "./mime"
-import { HandlerCb } from "./types";
+import mimeAware from "../mime"
+import { HandlerCb } from "../types";
 import {Request, Response} from "@mintyjs/http"
-import WebRequest from "./Request";
-import WebResponse from "./Response";
-import fastJson from "fast-json-stringify"
+import WebRequest from "../Request";
+import WebResponse from "../Response";
 interface IHandlerParams{
-    listener: HandlerCb
+    listener: HandlerCb;
 }
 
 export default class Handler{
@@ -20,9 +19,10 @@ export default class Handler{
 
         const webReq = new WebRequest(req)
         const webRes = new WebResponse(res)
+
         async function sendCallback(data:any){
             const [serialized, mimeType] = mimeAware(data)
-            res.setHeader("content-type", mimeType)
+            res.setHeader("content-type", mimeType+";charset=utf-8")
             res.end(serialized)
         }
 
@@ -33,7 +33,7 @@ export default class Handler{
             const [serialized, mimeType] = mimeAware(data)
             mimeAware(data)
             
-            res.setHeader("content-type", mimeType)
+            res.setHeader("content-type", mimeType+";charset=utf-8")
             res.end(serialized)
             webRes.hasSent = true
         }
