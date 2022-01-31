@@ -1,0 +1,5 @@
+export const kRouter = Symbol("Router")
+export const kState = Symbol("State")
+export const kPrefix = Symbol("Prefix")
+export const kBaseServer = Symbol("Base Server")
+export const kErrorSerializer = Symbol("Error Serializer")

@@ -1,112 +1,230 @@
 /**
  * Both Server and nested plugin contexts extend the application class
  */
-
 import Router from '@mintyjs/router';
-import { HandlerCb, PluginCallback } from '../types';
+import { HandlerCb, RouteOptions } from '../types';
 import Handler from './Handler';
 import createErrorSerializer from '../helpers/createErrorSerializer';
 import { Method } from '@mintyjs/http';
 import Plugin from './Plugin';
-
-interface RouteParams {
+import { kRouter, kErrorSerializer, kState, kPrefix } from "./symbols"
+interface CreateRouteParams {
     method: Method;
     path: string;
     handler: HandlerCb;
+    options?:RouteOptions;
+  }
+function annotateName(target:Application, name:string, desc:any) {
+    var method = desc.value;
+    desc.value = function () {
+        var prevMethod = this.currentMethod;
+        this.currentMethod = name;
+        method.apply(this, arguments);
+        this.currentMethod = prevMethod;   
+    }
 }
 interface AppOptions {
     router?:Router<Handler>
 }
+
 export default class Application {
+    currentMethod!:string;
     //#region constructor
-    protected router: Router<Handler>;
-    protected errorSerializer = createErrorSerializer();
-    protected state: 'ready' | 'building' = 'building';
-    protected _prefix: string = '';
+    [kRouter]:Router<Handler>;
+    [kErrorSerializer] = createErrorSerializer();
+    [kState]:'ready' | 'building' = 'building';
+    [kPrefix]:string = ""
+    version="1.0.1"
     protected set prefix(prefix:string){
-        this._prefix = prefix
-        this.router.prefix = prefix
-        
+        this[kPrefix] = prefix
+        this[kRouter].prefix = prefix
     }
     protected get prefix(){
-        return this._prefix
+        return this[kPrefix]
     }
     constructor(opts?: AppOptions) {
-        this.router = new Router({})
+        this[kRouter] = new Router({})
     }
     //#endregion
 
     public addPlugin(pluggable:typeof Plugin){
         const plugin = new pluggable()
         plugin.preLoad()
-        plugin.router.parentRouter = this.router
+        plugin[kRouter].parentRouter = this[kRouter]
         plugin.register()
-        this.router.addSubrouter(plugin.router)
+        this[kRouter].addSubrouter(plugin[kRouter])
         
 
     }
 
-    public addRoute(params: RouteParams) {
-        if (this.state === 'ready') {
+    public addRoute(params: CreateRouteParams) {
+        if (this[kState] === 'ready') {
             throw new Error(
                 'Cannot Register new listeners once app has started'
             );
         }
         const pathHandler = new Handler({
             listener: params.handler,
+            context: this
         });
-        this.router.addRoute(params.path, params.method, pathHandler);
+        this[kRouter].addRoute(params.path, params.method, pathHandler);
     }
 
     //#region method abstractions
-    public get(path: string, callback: HandlerCb) {
-        this.addRoute({
-            method: 'GET',
-            path: path,
-            handler: callback,
-        });
+    get(path: string, options: RouteOptions, callback: HandlerCb): void;
+    get(path: string, callback: HandlerCb): void;
+    @annotateName
+    get(path: string, arg2:RouteOptions|HandlerCb, arg3?: HandlerCb): void {
+        if(typeof(arg3)==="function"){
+            this.addRoute({
+                method: <any>this.currentMethod.toUpperCase(),
+                path: path,
+                handler: arg3,
+                options:arg2
+            })
+        }
+        else{
+            this.addRoute({
+                method: <any>this.currentMethod.toUpperCase(),
+                path: path,
+                handler: <any>arg2
+            });
+        }
     }
-    public post(path: string, callback: HandlerCb) {
-        this.addRoute({
-            method: 'POST',
-            path: path,
-            handler: callback,
-        });
+
+    post(path: string, options: RouteOptions, callback: HandlerCb): void;
+    post(path: string, callback: HandlerCb): void; 
+    @annotateName
+    post(path:string, arg2:RouteOptions|HandlerCb, arg3?:HandlerCb){
+        
+        if(typeof(arg3)==="function"){
+            this.addRoute({
+                method: <any>this.currentMethod.toUpperCase(),
+                path: path,
+                handler: arg3,
+                options:arg2
+            })
+        }
+        else{
+            this.addRoute({
+                method: <any>this.currentMethod.toUpperCase(),
+                path: path,
+                handler: <any>arg2
+            });
+        }
+
     }
-    public put(path: string, callback: HandlerCb) {
-        this.addRoute({
-            method: 'PUT',
-            path: path,
-            handler: callback,
-        });
+    put(path: string, options: RouteOptions, callback: HandlerCb): void;
+    put(path: string, callback: HandlerCb): void;
+    @annotateName
+    put(path:string, arg2:RouteOptions|HandlerCb, arg3?:HandlerCb){
+        
+        if(typeof(arg3)==="function"){
+            this.addRoute({
+                method: <any>this.currentMethod.toUpperCase(),
+                path: path,
+                handler: arg3,
+                options:arg2
+            })
+        }
+        else{
+            this.addRoute({
+                method: <any>this.currentMethod.toUpperCase(),
+                path: path,
+                handler: <any>arg2
+            });
+        }
+
     }
-    public patch(path: string, callback: HandlerCb) {
-        this.addRoute({
-            method: 'PATCH',
-            path: path,
-            handler: callback,
-        });
+
+    patch(path: string, options: RouteOptions, callback: HandlerCb): void;
+    patch(path: string, callback: HandlerCb): void;
+    @annotateName
+    patch(path:string, arg2:RouteOptions|HandlerCb, arg3?:HandlerCb){
+        
+        if(typeof(arg3)==="function"){
+            this.addRoute({
+                method: <any>this.currentMethod.toUpperCase(),
+                path: path,
+                handler: arg3,
+                options:arg2
+            })
+        }
+        else{
+            this.addRoute({
+                method: <any>this.currentMethod.toUpperCase(),
+                path: path,
+                handler: <any>arg2
+            });
+        }
+
     }
-    public delete(path: string, callback: HandlerCb) {
-        this.addRoute({
-            method: 'DELETE',
-            path: path,
-            handler: callback,
-        });
+    delete(path: string, options: RouteOptions, callback: HandlerCb): void;
+    delete(path: string, callback: HandlerCb): void;
+    @annotateName
+    delete(path:string, arg2:RouteOptions|HandlerCb, arg3?:HandlerCb){
+        
+        if(typeof(arg3)==="function"){
+            this.addRoute({
+                method: <any>this.currentMethod.toUpperCase(),
+                path: path,
+                handler: arg3,
+                options:arg2
+            })
+        }
+        else{
+            this.addRoute({
+                method: <any>this.currentMethod.toUpperCase(),
+                path: path,
+                handler: <any>arg2
+            });
+        }
+
     }
-    public options(path: string, callback: HandlerCb) {
-        this.addRoute({
-            method: 'OPTIONS',
-            path: path,
-            handler: callback,
-        });
+    options(path: string, options: RouteOptions, callback: HandlerCb): void;
+    options(path: string, callback: HandlerCb): void;
+    @annotateName
+    options(path:string, arg2:RouteOptions|HandlerCb, arg3?:HandlerCb){
+        
+        if(typeof(arg3)==="function"){
+            this.addRoute({
+                method: <any>this.currentMethod.toUpperCase(),
+                path: path,
+                handler: arg3,
+                options:arg2
+            })
+        }
+        else{
+            this.addRoute({
+                method: <any>this.currentMethod.toUpperCase(),
+                path: path,
+                handler: <any>arg2
+            });
+        }
+
     }
-    public head(path: string, callback: HandlerCb) {
-        this.addRoute({
-            method: 'HEAD',
-            path: path,
-            handler: callback,
-        });
+
+    head(path: string, options: RouteOptions, callback: HandlerCb): void;
+    head(path: string, callback: HandlerCb): void;
+    @annotateName
+    head(path:string, arg2:RouteOptions|HandlerCb, arg3?:HandlerCb){
+        
+        if(typeof(arg3)==="function"){
+            this.addRoute({
+                method: <any>this.currentMethod.toUpperCase(),
+                path: path,
+                handler: arg3,
+                options:arg2
+            })
+        }
+        else{
+            this.addRoute({
+                method: <any>this.currentMethod.toUpperCase(),
+                path: path,
+                handler: <any>arg2
+            });
+        }
+
     }
     //#endregion
 }

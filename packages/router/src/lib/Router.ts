@@ -30,8 +30,8 @@ interface RouterConfig {
 export default class Router<HT> {
     //#region constructor
     private radixTree: TrieNode<HT>; // The root node of the tree
-    public ignoreTrailingSlash: boolean = true;
-    public parameterSeparators: string[] = ['-', '+'];
+    private ignoreTrailingSlash: boolean = true;
+    private parameterSeparators: string[] = ['-', '+'];
     constructor(config: RouterConfig) {
         config.ignoreTrailingSlash
             ? (this.ignoreTrailingSlash = config.ignoreTrailingSlash)
@@ -102,23 +102,26 @@ export default class Router<HT> {
         this._addRoute(path, method, handler);
     }
 
-    private _find(path: string, method: Method): HT {
+    private _find(path: string, method: Method): [HT, Object] {
         path = trimPath(path, this.ignoreTrailingSlash);
         const parts = path.split('/');
-
+        const params:any = {}
         let current = this.radixTree;
-        let handler: any;
+        let handler: HT|undefined;
         let wildcard: TrieNode<any>;        
         if(path === ""){
-          
-          return current.getHandler(method)
+          return [current.getHandler(method), params]
         }
         parts.forEach((part, index) => {
             if (current.hasChild('*')) {
                 wildcard = current.getChild('*');
             }
 
-            if (current.hasChild(part)) {
+            const templateName = current.hasChild(part)
+            if (templateName) {
+                if(templateName.startsWith(":")){
+                    params[templateName.slice(1)]=part
+                }
                 current = current.getChild(part);
 
                 // If this is the last path part, return the handler
@@ -145,7 +148,12 @@ export default class Router<HT> {
                 throw new ERR_NOT_FOUND();
             }
         });
-        return handler;
+        if(handler){
+            return [handler, params];
+        }
+        else{
+            throw new ERR_NOT_FOUND();
+        }
     }
     /**
      * @description Gets the handler associated with an action
@@ -157,7 +165,7 @@ export default class Router<HT> {
      * @param path The path you want to fetch a handler for
      * @param method The HTTP method of the route
      */
-    find(path: string, method: Method): HT {
+    find(path: string, method: Method) {
         // printTree(
         //     this.radixTree,
         //     (node) =>
@@ -166,9 +174,10 @@ export default class Router<HT> {
         //         )}`,
         //     (n) => n.children
         // );
-        const handler = this._find(path, method);
-        return handler;
+        // Get the handler
+        return this._find(path, method);
     }
+    // Parse the path and pull any parameters
     migrate() {
         if (!this.parentRouter) {
             throw new Error('Cannot Migrate Without a Parent Router');

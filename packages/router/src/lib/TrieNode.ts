@@ -111,24 +111,24 @@ export default class TrieNode<HT> {
      *
      * @param name
      * @param exact This parameter prevents pattern matching
-     * @returns
+     * @returns The actual name of the handler or undefined
      */
-    hasChild(name: string, exact: boolean = false) {
+    hasChild(name: string, exact: boolean = false): string | undefined {
         let childrenNames = this.children.map((c) => c.name);
 
         if (childrenNames.includes(name)) {
-            return true;
+            return name
         }
         for (const template of childrenNames) {
             // Only operate on dynamic paths
             if (template.includes(':') && !exact) {
                 const matches = this.isMatch(name, template);
                 if (matches) {
-                    return true;
+                    return template
                 }
             }
         }
-        return false;
+        return undefined;
     }
     getChild(name: string): TrieNode<HT> {
         // Moves catchall routes to the end of the array, i.e lowest priority

@@ -1,20 +1,34 @@
-import Application from './util/Application';
+import { kBaseServer, kErrorSerializer, kRouter, kState } from '../lib/util/symbols';
+import Application from '../lib/util/Application';
 import HttpServer, { Request, Response } from '@mintyjs/http';
-import mimeAware from './mime';
-import { ListenMethod } from './types';
+import mimeAware from '../lib/mime';
+import { ListenMethod } from '../lib/types';
 
+declare module "@mintyjs/http"{
+  interface Request{
+    params:{
+      [x:string]:any;
+    };
+  }
+}
 export default class Server extends Application {
-  baseServer: HttpServer;
+  [kBaseServer]:HttpServer
 
   constructor() {
     super();
-    this.baseServer = new HttpServer({}, (req, res) => this.listener(req, res));
+    this[kBaseServer] = new HttpServer({
+
+    }, (req, res) => this.listener(req, res));
+
   }
 
   private async listener(req: Request, res: Response) {
-    try {
-      const handler = this.router.find(req.url, req.method);
 
+    res.setHeader("X-Powered-By", `MintyWeb ${this.version}`)
+    try {
+      res.setHeader("X-Content-Type-Options", "nosniff")
+      const [handler, params] = this[kRouter].find(req.url, req.method);
+      req.params = params      
       try {
         await handler.handle(req, res);
       } catch (err: any) {
@@ -30,7 +44,7 @@ export default class Server extends Application {
       if (err.name && err.name.startsWith('ERR_')) {
         const [data, mimeType] = mimeAware(
           { statusCode: err.statusCode, error: err.name, message: err.message },
-          this.errorSerializer
+          this[kErrorSerializer]
         );
         res.statusCode = err.statusCode;
         res.setHeader('content-type', mimeType);
@@ -38,11 +52,9 @@ export default class Server extends Application {
       }
     }
   }
-  //#region listen method
 
   public listen:ListenMethod = (arg1: any, arg2?: any, arg3?: any, arg4?: any) => {
-    this.state = 'ready';
-    this.baseServer.listen(arg1, arg2, arg3, arg4);
+    this[kState] = 'ready';
+    this[kBaseServer].listen(arg1, arg2, arg3, arg4);
   }
-  //#endregion
 }

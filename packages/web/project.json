@@ -10,7 +10,10 @@
         "outputPath": "dist/packages/web",
         "main": "packages/web/src/index.ts",
         "tsConfig": "packages/web/tsconfig.lib.json",
-        "assets": ["packages/web/*.md"]
+        "assets": [
+          "packages/web/*.md",
+           "packages/web/src/assets/**"
+        ]
       }
     },
     "lint": {
