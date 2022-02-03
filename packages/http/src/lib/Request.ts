@@ -1,3 +1,5 @@
+import { Socket } from 'net';
+import { TLSSocket } from 'tls';
 import { BaseRequest as BaseRequest, Method } from '../util/types';
 type RequestEvent =
     | 'aborted'
@@ -79,10 +81,10 @@ export default class Request {
     get trailers() {
         return this.rawRequest.trailers;
     }
-    get socket() {
+    get socket():Socket|TLSSocket {
         return this.rawRequest.socket;
     }
-    get rawHeaders() {
+    get rawHeaders():string[] {
         return this.rawRequest.rawHeaders;
     }
     get method():Method {
@@ -113,7 +115,7 @@ export default class Request {
         return this.rawRequest.destroyed;
     }
 
-    read(size: number) {
+    read(size: number|undefined) {
         return this.rawRequest.read(size);
     }
 
