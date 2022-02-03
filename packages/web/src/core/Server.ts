@@ -1,7 +1,7 @@
 import { kBaseServer, kErrorSerializer, kRouter, kState } from '../lib/util/symbols';
 import Application from '../lib/util/Application';
 import HttpServer, { Request, Response } from '@mintyjs/http';
-import mimeAware from '../lib/mime';
+import mimeAware from '../mime';
 import { ListenMethod } from '../lib/types';
 
 declare module "@mintyjs/http"{

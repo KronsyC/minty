@@ -1,4 +1,4 @@
-import mimeAware from "../mime"
+import mimeAware from "../../mime"
 import { HandlerCb } from "../types";
 import {Request, Response} from "@mintyjs/http"
 import WebRequest from "../../core/Request";
