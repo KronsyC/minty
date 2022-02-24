@@ -8,6 +8,7 @@
     "@types/memoizee": "^0.4.7",
     "fast-json-stringify": "^3.0.2",
     "memoizee": "^0.4.15",
+    "schematica": "^1.0.13",
     "tslib": "^2.0.0"
   },
   "devDependencies": {

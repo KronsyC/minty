@@ -10,7 +10,7 @@
     "importHelpers": true,
     "target": "es2015",
     "module": "esnext",
-    "lib": ["es2017", "dom"],
+    "lib": [ "es5", "es6", "dom", "dom.iterable", "ES2021"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "esModuleInterop": true,
@@ -20,7 +20,10 @@
       "@mintyjs/mime-aware": ["packages/mime-aware/src/index.ts"],
       "@mintyjs/router": ["packages/router/src/index.ts"],
       "@mintyjs/web": ["packages/web/src/index.ts"]
-    }
+    },
+    "types": [
+      "node"
+    ]
   },
   "exclude": ["node_modules", "tmp"]
 }

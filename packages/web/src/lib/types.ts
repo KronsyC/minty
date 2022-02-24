@@ -1,9 +1,9 @@
-import Application from './util/Application';
+import Context from '../core/Context';
 import WebRequest from '../core/Request';
 import WebResponse from '../core/Response';
 
-export type HandlerCb = (
-    this: Application,
+export type RouteCallback = (
+    this: Context,
     req: WebRequest,
     res: WebResponse
 ) => Promise<any>;
@@ -29,6 +29,6 @@ export type ListenMethod = {
 };
 
 export interface PluginOptions {}
-export type PluginCallback = (app: Application, options: PluginOptions) => void;
+export type PluginCallback = (app: Context, options: PluginOptions) => void;
 
-export interface RouteOptions {}
+

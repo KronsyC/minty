@@ -27,6 +27,9 @@ interface RouterConfig {
     prefix?: string;
 }
 
+interface QueryType{
+    [x:string]:any|QueryType
+}
 export default class Router<HT> {
     //#region constructor
     private radixTree: TrieNode<HT>; // The root node of the tree
@@ -102,38 +105,87 @@ export default class Router<HT> {
         this._addRoute(path, method, handler);
     }
 
-    private _find(path: string, method: Method): [HT, Object] {
-        path = trimPath(path, this.ignoreTrailingSlash);
+    private _find(path: string, method: Method) {        
+        const [_path, querystring] = path.split("?")
+        path = trimPath(_path, this.ignoreTrailingSlash);
         const parts = path.split('/');
-        const params:any = {}
+        const params:{[x:string]:string} = {}
+        const query:{[x:string]:string} = this.parseQuery(querystring)
+        let brk = false;
         let current = this.radixTree;
         let handler: HT|undefined;
-        let wildcard: TrieNode<any>;        
+        let wildcard: TrieNode<HT>;     
+        let wildcardIndex:number=0;   
+
         if(path === ""){
-          return [current.getHandler(method), params]
+            const handler = current.getHandler(method)     
+            if(!handler)throw new ERR_METHOD_NOT_ALLOWED(`Cannot ${method} /${path}`)       
+            return {handler, params, query}
         }
         parts.forEach((part, index) => {
-            if (current.hasChild('*')) {
+            
+            // A way to fasttrack out of the loop, forEach does not have a break feature
+            if(brk)return
+            
+            if (current.hasChild('*', true)) {
+                
                 wildcard = current.getChild('*');
+                wildcardIndex = index
             }
 
+            // Templatename is the intial name that the user used for the path
+            // A returned templatename means that the router has a child x
             const templateName = current.hasChild(part)
+            
             if (templateName) {
-                if(templateName.startsWith(":")){
+                
+                // Query params start with colon
+                if(templateName.startsWith(":") && !(templateName.includes("+")||templateName.includes("-"))){
+                    
                     params[templateName.slice(1)]=part
                 }
+                else if(templateName.includes("+")||templateName.includes("-")){
+                    const sections = templateName.split(/\+|\-/)
+                    const reqSections = part.split(/\+|\-/)
+                    if(sections.length===reqSections.length){
+                        // If it starts with colon, assignment, else, check for equality, throws 404
+                        sections.forEach((section, index) => {
+                            const reqSection = reqSections[index]
+                            if(section.startsWith(":")){
+                                params[section.slice(1)] = reqSection
+                            }
+                            else{
+                                if(section!==reqSection){
+                                    throw new ERR_NOT_FOUND(`Cannot ${method} /${path}`)
+                                }
+                            }
+                        })
+                        
+                    }
+                }
                 current = current.getChild(part);
-
+                
                 // If this is the last path part, return the handler
                 if (index === parts.length - 1 && current.handlers) {
                     handler = current.getHandler(method)
-                } else if (index === parts.length - 1 && !current.terminal) {
-                    throw new ERR_NOT_FOUND();
+                    // No handler
+                    if(!handler)throw new ERR_METHOD_NOT_ALLOWED(`Cannot ${method} /${path}`)       
+                }
+                // If it is the last path part and no handlers are avaliable, i.e 404
+                 else if (index === parts.length - 1 && !current.terminal) {
+                    throw new ERR_NOT_FOUND(`Cannot ${method} /${path}`);
                 } else {
-                    // Do Nothing
+                    // Proceed through the tree
                 }
             } 
+            // No Routes found, default to the most specific wildcard
             else if (wildcard) {
+                
+                brk=true                
+                // The path parts traversed after the wildcard was found
+                const remainingPath = parts.slice(wildcardIndex)
+                
+                params["*"] = remainingPath.join("/")
                 let methodHandler = wildcard.handlers
                     ? wildcard.handlers[method]
                     : undefined;
@@ -142,19 +194,23 @@ export default class Router<HT> {
                 } else if (wildcard.handlers && wildcard.handlers['ALL']) {
                     handler = wildcard.handlers['ALL'];
                 } else {
-                    throw new ERR_METHOD_NOT_ALLOWED();
+                    
+                    throw new ERR_METHOD_NOT_ALLOWED(`Cannot ${method} /${path}`);
                 }
             } else {
-                throw new ERR_NOT_FOUND();
+                
+                throw new ERR_NOT_FOUND(`Cannot ${method} /${path}`);
             }
         });
         if(handler){
-            return [handler, params];
+            
+            return {handler, params, query};
         }
         else{
-            throw new ERR_NOT_FOUND();
+            throw new ERR_NOT_FOUND(`Cannot ${method} /${path}`);
         }
     }
+
     /**
      * @description Gets the handler associated with an action
      * @summary
@@ -166,6 +222,7 @@ export default class Router<HT> {
      * @param method The HTTP method of the route
      */
     find(path: string, method: Method) {
+        // Debug
         // printTree(
         //     this.radixTree,
         //     (node) =>
@@ -197,6 +254,72 @@ export default class Router<HT> {
             }
         };
         writeChildrenToPath(this.radixTree, '/');
+    }
+    private parseQuery(string:string){
+        
+        if(!string){return {}}        
+        const parts = string.split(";") || [string]
+        
+        let query:QueryType = {}
+        if(parts==[]){
+            return {}
+        }
+        
+        // Square brackets are used to denote nested types, ie user[name]=Kronsy;user[age]=23 is eqivalent to user: {name:"Kronsy",age:23}
+        parts.forEach(part => {
+            if(!part){
+                return
+            }
+            let [name, value] = part.split("=", 2)
+            name = name.replaceAll("]", "")
+            let parts = name.split("[")
+            if(parts.length===1){
+                query[parts[0]] = value
+                return
+            }
+            else if(parts.length === 0){
+                return
+            }
+            else{
+                let context=query;
+                parts.forEach((part, index) => { 
+                    const isLast = index===parts.length-1
+                    if(typeof context[part] === "object"){
+                        if(isLast){
+                            context[part]["root"] = value
+                        }
+                        else{
+                            context = context[part]
+                        }
+                    }
+                    else if(typeof context[part] === "string"){
+                        if(isLast){
+                            // Just overwrite the value
+                            context[part] = value
+                        }
+                        else{
+                            let tmp = context[part]
+                            context[part] = {}
+                            context[part]["root"] = tmp
+                            context = context[part]
+                        }
+ 
+                    }
+                    else{
+                        if(isLast){
+                            context[part]=value
+                        }
+                        else{
+                            context[part] = {}
+                            context = context[part]
+                        }
+
+                    }
+                })
+            }
+
+        })
+        return query
     }
     /**
      * Routers can have scoped child routers which write their routes to the parent under a prefix

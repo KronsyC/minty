@@ -3297,6 +3297,11 @@ saxes@^5.0.1:
   dependencies:
     xmlchars "^2.2.0"
 
+schematica@^1.0.13:
+  version "1.0.13"
+  resolved "https://registry.yarnpkg.com/schematica/-/schematica-1.0.13.tgz#4a4fb7044933142da1369c691d6c930f6c46b687"
+  integrity sha512-tWMdw8OfKTKSuBbPDHDUPQV8S8VHdNdmRHrzAI016Rlaf6uscHb/UGZ1QX/jubIUyk315sGugPDPhmtQeyhTUQ==
+
 semver@7.3.4:
   version "7.3.4"
   resolved "https://registry.yarnpkg.com/semver/-/semver-7.3.4.tgz#27aaa7d2e4ca76452f98d3add093a72c943edc97"

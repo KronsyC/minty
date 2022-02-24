@@ -12,7 +12,7 @@
         "tsConfig": "packages/web/tsconfig.lib.json",
         "assets": [
           "packages/web/*.md",
-           "packages/web/src/assets/**"
+           "packages/web/src/static/**"
         ]
       }
     },

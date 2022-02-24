@@ -1,77 +1,39 @@
-// import path from "path";
-// import Server from "./core/Server";
-// import Plugin from "./lib/util/Plugin";
+import path from "path";
+import Server from "./core/Server";
 
-// class API extends Plugin{
-//     override preLoad(): void {
-//         this.prefix = "api"
-//     }
-//     override register(): void {
-//         this.get("/", async(req, res)=>{
-//             res.send("API Plugin")
-//         })
+const app = new Server()
 
-//     }
-// }
-
-// const app = new Server()
-// app.addPlugin(API)
-
-// app.get("/", async function(req, res){
-//     console.log(`Incoming Request from ${req.source.ip}:${req.source.port} -- http/${req.httpVersion}`);
-//     res.status(200)
-//     .sendFile(path.join(__dirname, "assets", "index.html"))
-// })
-// app.get("favicon.ico", async(req, res)=>{
-//     res.status(200).sendFile(path.join(__dirname, "assets", "favicon.ico"))
-// })
-
-// app.get("/users/:userid", async(req, res)=>{
-//     return `Fetching data for user ${(<any>req.params).userid}`
-// })
-// app.get("/users/me", async(req, res)=>{
-//     return "Get current user"
-// })
-// app.listen(3000, (url)=>{
-//     console.log(`Server listening at ${url}`);
-// })
-
-import Validator from "./validator";
-
-
-
-const validateObject = new Validator().build({
-    type: "object",
-    additionalProperties: true,
-    properties: {
-        name: {
-            type: "string"
-        },
-        age: {
-            type: "number",
-            min: 13,
-            max:14
+app.get("/", {
+    schemas: {
+        response: {
+            "4xx": {
+                type: "object",
+                properties: {
+                    statusCode: "number",
+                    error: "string",
+                    message: "string"
+                }
+            }
         }
     }
+}, async(req, res)=> {
+    console.log("HEY");
+    
+    return "WASSUP"
+})
+app.post("/users", async(req, res) => {
+    return "Create User"
+})
+app.put("/users/:id-wassup", async(req, res) => {
+    return req.params
+})
+app.delete("/users/:id", async(req, res) => {
+    return `Delete user ${req.params["id"]}`
 })
 
 
 
-console.log(validateObject({
-    name: "Samir",
-    age: 13
-}))
 
-
-
-
-
-
-
-
- 
-
-
-
-
-
+app.listen(3000, (url)=>{
+    console.log(`Server listening at ${url}`);
+})

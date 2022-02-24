@@ -1,15 +1,20 @@
 import { Request, RequestHeaders } from "@mintyjs/http";
 
 interface WebRequestOpts{
+    query: Query;
     params:{[x:string]:any}
 }
-
+interface Query{
+    [x:string]:any|Query
+}
 export default class WebRequest{
     rawRequest:Request;
-    params:Record<string ,string>
+    params:{[x:string]:any}
+    query:Query
     constructor(req:Request, opts:WebRequestOpts){
         this.rawRequest=req
         this.params=opts.params
+        this.query=opts.query
     }
 
     get headers():RequestHeaders{

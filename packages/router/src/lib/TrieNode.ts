@@ -177,16 +177,17 @@ export default class TrieNode<HT> {
     }
 
     getHandler(method:Method){
+        let _handler = undefined
         if(this.handlers){
-            let handler = this.handlers[method]
-            if(!handler){
-                handler = this.handlers["ALL"]
+            _handler = this.handlers[method]
+
+            // The ALL method is a backup in the case
+            // That there is no specific handler for the
+            // method
+            if(!_handler){
+                _handler = this.handlers["ALL"]
             }
-            if(!handler){
-                throw new ERR_METHOD_NOT_ALLOWED()
-            }
-            return handler
         }
-        throw new ERR_NOT_FOUND()
+        return _handler
     }
 }

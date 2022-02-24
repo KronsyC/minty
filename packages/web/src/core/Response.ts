@@ -16,6 +16,9 @@ export default class WebResponse{
     private set sendCallback(func:(data:any)=>void){
         this._sendCallback=func
     }
+    get headers(){
+        return this.rawResponse.getHeaders()
+    }
     get statusCode(){
         return this.rawResponse.statusCode
     }
@@ -42,7 +45,11 @@ export default class WebResponse{
         this._send(data)
     }
     sendFile(location:string){  
+        console.log(location);
+        
         if(fs.existsSync(location))   {
+            console.log("exists");
+            
             this._send(`file@${location}`)        
         }  
         else{
