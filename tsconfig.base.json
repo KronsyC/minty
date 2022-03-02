@@ -1,29 +1,28 @@
 {
-  "compileOnSave": false,
-  "compilerOptions": {
-    "rootDir": ".",
-    "sourceMap": true,
-    "declaration": false,
-    "moduleResolution": "node",
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "importHelpers": true,
-    "target": "es2015",
-    "module": "esnext",
-    "lib": [ "es5", "es6", "dom", "dom.iterable", "ES2021"],
-    "skipLibCheck": true,
-    "skipDefaultLibCheck": true,
-    "esModuleInterop": true,
-    "baseUrl": ".",
-    "paths": {
-      "@mintyjs/http": ["packages/http/src/index.ts"],
-      "@mintyjs/mime-aware": ["packages/mime-aware/src/index.ts"],
-      "@mintyjs/router": ["packages/router/src/index.ts"],
-      "@mintyjs/web": ["packages/web/src/index.ts"]
+    "compileOnSave": false,
+    "compilerOptions": {
+        "rootDir": ".",
+        "sourceMap": true,
+        "declaration": false,
+        "moduleResolution": "node",
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "importHelpers": true,
+        "target": "es2015",
+        "module": "esnext",
+        "lib": ["es5", "es6", "dom", "dom.iterable", "ES2021"],
+        "skipLibCheck": true,
+        "skipDefaultLibCheck": true,
+        "esModuleInterop": true,
+        "baseUrl": ".",
+        "strictPropertyInitialization": true,
+        "paths": {
+            "@mintyjs/fmturl": ["packages/fmturl/src/index.ts"],
+            "@mintyjs/http": ["packages/http/src/index.ts"],
+            "@mintyjs/router": ["packages/router/src/index.ts"],
+            "@mintyjs/web": ["packages/web/src/index.ts"]
+        },
+        "types": ["node"]
     },
-    "types": [
-      "node"
-    ]
-  },
-  "exclude": ["node_modules", "tmp"]
+    "exclude": ["node_modules", "tmp"]
 }

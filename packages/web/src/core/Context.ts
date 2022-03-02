@@ -27,9 +27,6 @@ interface CreateRouteParams {
 export default abstract class Context {
     [kRouter]:Router<Handler>;
     [kSchemaProvider]:SchemaProvider;
-    protected set prefix(prefix:string){
-        this[kRouter].prefix = prefix
-    }
 
     constructor() {
         this[kRouter] = new Router({})

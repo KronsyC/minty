@@ -4,23 +4,7 @@ import LERR_DUPLICATE_ROUTES from '../errors/LERR_DUPLICATE_ROUTES';
 import printTree from './printTree';
 import TrieNode from './TrieNode';
 import { Method } from './types';
-
-// Small utility function to trim trailing and leading slashes
-function trimPath(path: string, ignoreTrailingSlash: boolean) {
-    if (path.startsWith('/')) {
-        path = path.slice(1);
-    }
-    if (path.endsWith('/') && ignoreTrailingSlash) {
-        path = path.slice(0, path.length - 1);
-    }
-    const parts = path.split('/');
-    parts.forEach((part, index) => {
-        if (part === '') {
-            parts.splice(index, 1);
-        }
-    });
-    return parts.join('/');
-}
+import fmtUrl from "@mintyjs/fmturl"
 interface RouterConfig {
     ignoreTrailingSlash?: boolean;
     parameterSeparators?: string[];
@@ -30,6 +14,11 @@ interface RouterConfig {
 interface QueryType{
     [x:string]:any|QueryType
 }
+/**
+ * REFERENCE
+ *              * = wildcard route
+ *              _* = Root Wildcard route
+ */
 export default class Router<HT> {
     //#region constructor
     private radixTree: TrieNode<HT>; // The root node of the tree
@@ -42,20 +31,15 @@ export default class Router<HT> {
         config.parameterSeparators
             ? (this.parameterSeparators = config.parameterSeparators)
             : null;
-        this.radixTree = new TrieNode(this, 'root');
+        const prefix = fmtUrl(config.prefix||"/", this.ignoreTrailingSlash)
+        this.prefix = prefix
+
+        this.radixTree = new TrieNode(this, prefix);
         this.radixTree.rootNode = true;
-        this.prefix = config.prefix || '/';
     }
     //#endregion
     parentRouter?: Router<HT>;
-    private _prefix: string = '/';
-    get prefix() {
-        return this._prefix;
-    }
-    set prefix(pfix: string) {
-        this._prefix = pfix;
-        this.radixTree.name = pfix;
-    }
+    private prefix: string = '/';
     private _addRoute(path: string, method: Method, handler: HT) {
         const location = path.split('/');
 
@@ -101,14 +85,27 @@ export default class Router<HT> {
         }
     }
     addRoute(path: string, method: Method, handler: HT) {
-        path = trimPath(path, this.ignoreTrailingSlash);
+        // Set the path as a root wildcard if it is a plain star with no preceeding slash
+        if(path==="*"){
+            path = "_*"
+        }
+        path = fmtUrl(path, this.ignoreTrailingSlash);
         this._addRoute(path, method, handler);
     }
 
     private _find(path: string, method: Method) {        
         const [_path, querystring] = path.split("?")
-        path = trimPath(_path, this.ignoreTrailingSlash);
+        path = fmtUrl(_path, this.ignoreTrailingSlash);
+
+        
+        // Make sure that the path starts with the prefix, if not, throw a 404
+        // as the request is out of the scope of the router
+        if(!path.startsWith(this.prefix)){
+            throw new ERR_NOT_FOUND(`Cannot ${method} /${path}`)
+        }
+        path = path.slice(this.prefix.length)
         const parts = path.split('/');
+        
         const params:{[x:string]:string} = {}
         const query:{[x:string]:string} = this.parseQuery(querystring)
         let brk = false;
@@ -116,9 +113,29 @@ export default class Router<HT> {
         let handler: HT|undefined;
         let wildcard: TrieNode<HT>;     
         let wildcardIndex:number=0;   
+        // Add the root wildcard as the wildcard
+        if(current.hasChild("_*", true)){
+            wildcard=current.getChild("_*")
+        }
 
+        
+        
         if(path === ""){
-            const handler = current.getHandler(method)     
+            let handler = current.getHandler(method)    
+
+            if(!handler){
+                // Check if router has a root wildcard
+                if(current.hasChild("_*", true)){
+                    handler = current.getChild("_*").getHandler(method)
+                    
+                }
+                else{
+                    if(!current.handlers){
+                        throw new ERR_NOT_FOUND(`Cannot ${method} /${path}`)
+                    }
+                }
+            }
+            
             if(!handler)throw new ERR_METHOD_NOT_ALLOWED(`Cannot ${method} /${path}`)       
             return {handler, params, query}
         }
@@ -256,16 +273,15 @@ export default class Router<HT> {
         writeChildrenToPath(this.radixTree, '/');
     }
     private parseQuery(string:string){
-        
         if(!string){return {}}        
-        const parts = string.split(";") || [string]
+        const parts = string.split("&") || [string]
         
         let query:QueryType = {}
         if(parts==[]){
             return {}
         }
         
-        // Square brackets are used to denote nested types, ie user[name]=Kronsy;user[age]=23 is eqivalent to user: {name:"Kronsy",age:23}
+        // Square brackets are used to denote nested types, ie user[name]=Kronsy;user[age]=23 is eqivalent to user: {name:"Kronsy",age:23} TODO: Possibly make this an opt-in feature
         parts.forEach(part => {
             if(!part){
                 return

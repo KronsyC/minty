@@ -1,8 +1,9 @@
 {
-  "version": 2,
-  "projects": {
-    "http": "packages/http",
-    "router": "packages/router",
-    "web": "packages/web"
-  }
+    "version": 2,
+    "projects": {
+        "fmturl": "packages/fmturl",
+        "http": "packages/http",
+        "router": "packages/router",
+        "web": "packages/web"
+    }
 }
