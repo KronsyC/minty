@@ -3,11 +3,7 @@
 // Each Application has it's own router which is mounted to its parent's router
 // Each Application has a schema provider that inherits from it's parent
 //////////////////////////////////////////////////////////////////////
-export const kRouter = Symbol("Router")
-export const kState = Symbol("State")
-export const kSchemaProvider = Symbol("Schema Provider")
-export const k5xxHandler = Symbol("Server side error handler function");
-export const k4xxHandler = Symbol("Client side error handler function");
+
 import Router from '@mintyjs/router';
 import { RouteCallback } from '../lib/types';
 import Handler, { HandlerSchemas } from './Handler';
@@ -23,14 +19,32 @@ interface CreateRouteParams {
     schemas? : HandlerSchemas
 }
 
-
+export const kRouter = Symbol("Router")
+export const kSchemaProvider = Symbol("Schema Provider")
+export const kErrorSerializer = Symbol("Error Serializer")
 export default abstract class Context {
     [kRouter]:Router<Handler>;
     [kSchemaProvider]:SchemaProvider;
+    [kErrorSerializer]:Function
 
     constructor() {
         this[kRouter] = new Router({})
         this[kSchemaProvider] = new SchemaProvider()
+        const schema = this[kSchemaProvider].createSchema({
+            type: "object",
+            required: ["statusCode", "error"],
+            properties:{
+              statusCode: {
+                type: "number",
+                min: 100,
+                max:599
+              },
+              error: "string",
+              message: "string"
+            },
+            strict: true
+          })
+          this[kErrorSerializer] = this[kSchemaProvider].buildSerializer(schema)
     }
 
 

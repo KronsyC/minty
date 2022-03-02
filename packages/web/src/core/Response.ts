@@ -9,12 +9,16 @@ interface IWebResponseOptions{
 export default class WebResponse{
     rawResponse:Response
     private _sendCallback?:(data:any)=>void
+    private _sendFileCallback?:(location:string)=>void
     public hasSent:boolean=false
     constructor(res:Response) {
         this.rawResponse = res
     }
     private set sendCallback(func:(data:any)=>void){
         this._sendCallback=func
+    }
+    private set sendFileCallback(func:(location:string)=>void){
+        this._sendFileCallback = func
     }
     get headers(){
         return this.rawResponse.getHeaders()
@@ -26,7 +30,8 @@ export default class WebResponse{
         this.rawResponse.statusCode = code
         return this
     }
-    private _send(data:any){
+
+    send(data:any){
         if(this._sendCallback){
             if(!this.hasSent){
                 this.hasSent = true
@@ -41,19 +46,19 @@ export default class WebResponse{
             throw new Error("No Send callback found, please open a github issue")
         }
     }
-    send(data:any){
-        this._send(data)
-    }
     sendFile(location:string){  
-        console.log(location);
-        
-        if(fs.existsSync(location))   {
-            console.log("exists");
-            
-            this._send(`file@${location}`)        
-        }  
+        if(this._sendFileCallback){
+            if(!this.hasSent){
+                this.hasSent = true
+                this._sendFileCallback(location)
+            }
+            else{
+                throw new Error("Cannot send response more than once")
+            }
+
+        }
         else{
-            throw new Error(`File ${location} does not exist`)
+            throw new Error("No Send callback found, please open a github issue")
         }
     }
     set(name:string, value: string|string[]|number){

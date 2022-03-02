@@ -2,8 +2,8 @@ import Context, { kRouter, kSchemaProvider } from './Context';
 import HttpServer, { Request, Response } from '@mintyjs/http';
 import { ListenMethod } from '../lib/types';
 import getGenericErrorMessage from '../util/getGenericStatusMessage';
+import sendError from '../util/sendError';
 export const kBaseServer = Symbol("Base Server")
-export const kErrorSerializer = Symbol("Error Serializer")
 declare module "@mintyjs/http"{
   interface Request{
     params:{
@@ -16,13 +16,12 @@ declare module "@mintyjs/http"{
 }
 export default class Server extends Context {
   [kBaseServer]:HttpServer
-  [kErrorSerializer]:Function
   constructor() {
     super();
     this[kBaseServer] = new HttpServer({
       //TODO:Passthrough server configuration
     }, (req, res) => this.listener(req, res));
-    this.buildErrorSerializer()
+
   }
 
   private async listener(req: Request, res: Response) {
@@ -42,40 +41,12 @@ export default class Server extends Context {
       await handler.handle(req, res);
     } 
     catch (err: any) {
-        const statusCode = err.statusCode||500
-        const error = getGenericErrorMessage(statusCode)
-        
-        const message = err.internal===false?err.message||undefined:undefined
-        const constructed = {
-          statusCode: statusCode,
-          error: error,
-          message:message
-        }
-        res.statusCode = statusCode
-        const serialized = this[kErrorSerializer](constructed)
-        res.setHeader("content-type", "application/json")        
-        res.end(serialized);
+        sendError(err, res, this)
     }
   }
 
   public listen:ListenMethod = (arg1: any, arg2?: any, arg3?: any, arg4?: any) => {
     this[kBaseServer].listen(arg1, arg2, arg3, arg4);
   }
-  private buildErrorSerializer(){
-    const schema = this[kSchemaProvider].createSchema({
-      type: "object",
-      required: ["statusCode", "error"],
-      properties:{
-        statusCode: {
-          type: "number",
-          min: 100,
-          max:599
-        },
-        error: "string",
-        message: "string"
-      },
-      strict: true
-    })
-    this[kErrorSerializer] = this[kSchemaProvider].buildSerializer(schema)
-  }
+
 }
