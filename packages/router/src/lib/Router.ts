@@ -103,6 +103,8 @@ export default class Router<HT> {
         if(!path.startsWith(this.prefix)){
             throw new ERR_NOT_FOUND(`Cannot ${method} /${path}`)
         }
+
+        // Switch to absolute routing
         path = path.slice(this.prefix.length)
         const parts = path.split('/');
         
@@ -117,9 +119,7 @@ export default class Router<HT> {
         if(current.hasChild("_*", true)){
             wildcard=current.getChild("_*")
         }
-
-        
-        
+  
         if(path === ""){
             let handler = current.getHandler(method)    
 
@@ -153,7 +153,24 @@ export default class Router<HT> {
             // Templatename is the intial name that the user used for the path
             // A returned templatename means that the router has a child x
             const templateName = current.hasChild(part)
-            
+            function retWildcard(){
+                brk=true                
+                // The path parts traversed after the wildcard was found
+                const remainingPath = parts.slice(wildcardIndex)
+                
+                params["*"] = remainingPath.join("/")
+                let methodHandler = wildcard.handlers
+                    ? wildcard.handlers[method]
+                    : undefined;
+                if (methodHandler) {
+                    handler = methodHandler;
+                } else if (wildcard.handlers && wildcard.handlers['ALL']) {
+                    handler = wildcard.handlers['ALL'];
+                } else {
+                    
+                    throw new ERR_METHOD_NOT_ALLOWED(`Cannot ${method} /${path}`);
+                }
+            }
             if (templateName) {
                 
                 // Query params start with colon
@@ -188,8 +205,12 @@ export default class Router<HT> {
                     // No handler
                     if(!handler)throw new ERR_METHOD_NOT_ALLOWED(`Cannot ${method} /${path}`)       
                 }
-                // If it is the last path part and no handlers are avaliable, i.e 404
+                // If it is the last path part and no handlers are avaliable
+                // Attempt to use a wildcard
+                // Else, 404
                  else if (index === parts.length - 1 && !current.terminal) {
+                     if(wildcard)retWildcard()
+                     return
                     throw new ERR_NOT_FOUND(`Cannot ${method} /${path}`);
                 } else {
                     // Proceed through the tree
@@ -197,23 +218,8 @@ export default class Router<HT> {
             } 
             // No Routes found, default to the most specific wildcard
             else if (wildcard) {
-                
-                brk=true                
-                // The path parts traversed after the wildcard was found
-                const remainingPath = parts.slice(wildcardIndex)
-                
-                params["*"] = remainingPath.join("/")
-                let methodHandler = wildcard.handlers
-                    ? wildcard.handlers[method]
-                    : undefined;
-                if (methodHandler) {
-                    handler = methodHandler;
-                } else if (wildcard.handlers && wildcard.handlers['ALL']) {
-                    handler = wildcard.handlers['ALL'];
-                } else {
-                    
-                    throw new ERR_METHOD_NOT_ALLOWED(`Cannot ${method} /${path}`);
-                }
+                retWildcard()
+
             } else {
                 
                 throw new ERR_NOT_FOUND(`Cannot ${method} /${path}`);

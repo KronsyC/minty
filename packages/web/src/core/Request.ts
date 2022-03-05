@@ -1,19 +1,18 @@
 import { Request, RequestHeaders } from "@mintyjs/http";
+import { Querystring, UrlParameters } from "./types";
 
-interface WebRequestOpts{
-    query: Query;
-    params:{[x:string]:any};
-    body: any;
+interface WebRequestOpts<BodyType, ParamsType, QueryType>{
+    query: QueryType;
+    params:ParamsType
+    body: BodyType;
 }
-interface Query{
-    [x:string]:any|Query
-}
-export default class WebRequest{
+
+export default class WebRequest<BodyType=any, ParamsType=UrlParameters, QueryType=Querystring>{
     rawRequest:Request;
-    params:{[x:string]:any}
-    query:Query
-    body:any;
-    constructor(req:Request, opts:WebRequestOpts){
+    params:ParamsType
+    query:QueryType
+    body:BodyType;
+    constructor(req:Request, opts:WebRequestOpts<BodyType, ParamsType, QueryType>){
         this.rawRequest=req
         this.params=opts.params
         this.query=opts.query

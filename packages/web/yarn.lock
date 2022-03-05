@@ -134,10 +134,10 @@ print-tree@^0.1.5:
   resolved "https://registry.yarnpkg.com/print-tree/-/print-tree-0.1.5.tgz#32c9ea0fac5da68616fe042049b540a4c4b774ee"
   integrity sha512-t5eFtuheMgWGR3kj1vtxsvfWrrecEEWow3IgEtbW0EPbYRufHAvB+ShK1DgRjWxEYYEqO4B6DNlkoPmh7E3LGQ==
 
-schematica@^1.1.11:
-  version "1.1.11"
-  resolved "https://registry.yarnpkg.com/schematica/-/schematica-1.1.11.tgz#3321074efb4336b70d5f5774f87a0a1ae753ee93"
-  integrity sha512-uk9xKMroLBwhUFU4DJ/pZaMJZzIWOhXuwDUJEWlpXkgYiumADV+WcZ2a+6fTYbmDXeO5QgBuW0Kcgim+mZRQSg==
+schematica@^1.1.14:
+  version "1.1.14"
+  resolved "https://registry.yarnpkg.com/schematica/-/schematica-1.1.14.tgz#8064a62c88f9049142d77a75b09f083aefe6b4b2"
+  integrity sha512-sp6SN1BeOgZmksmxLfA329YZIniu/rlZJyZZmdDh50rATLEu4kXz4WS7UHHHW3n+DOgz6SCft5ACNCSUIAyGuw==
 
 timers-ext@^0.1.7:
   version "0.1.7"

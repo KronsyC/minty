@@ -1,16 +1,15 @@
 import Context from '../core/Context';
 import WebRequest from '../core/Request';
 import WebResponse from '../core/Response';
+import { Querystring, UrlParameters } from '../core/types';
 
-export type RouteCallback = (
+export type RouteCallback<BodyType = any, ParamsType=UrlParameters, QueryType=Querystring> = (
     this: Context,
-    req: WebRequest,
+    req: WebRequest<BodyType, ParamsType, QueryType>,
     res: WebResponse
 ) => Promise<any>;
 
 export type Serializer = (doc: any) => any;
-
-export type HookEvent = 'onRequest' | 'onResponse';
 
 export type ListenMethod = {
     (

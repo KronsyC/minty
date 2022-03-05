@@ -1,209 +1,293 @@
-//////////////////////////////////////////////////////////////////////
-// An Application is a context in which hooks and routers operate
-// Each Application has it's own router which is mounted to its parent's router
-// Each Application has a schema provider that inherits from it's parent
-//////////////////////////////////////////////////////////////////////
-
 import Router from '@mintyjs/router';
 import { RouteCallback } from '../lib/types';
 import Handler, { HandlerSchemas } from './Handler';
 import { Method } from '@mintyjs/http';
 import SchemaProvider from './SchemaProvider';
+import { PluginCallback, PluginOptions, UrlParameters, Querystring } from './types';
+import fmtUrl from '@mintyjs/fmturl';
+
 interface RouteOptions {
-    schemas?: HandlerSchemas
+    schemas?: HandlerSchemas;
 }
-interface CreateRouteParams {
+interface CreateRouteParams<BodyType, ParamsType, QueryType> {
     method: Method;
     path: string;
-    handler: RouteCallback;
-    schemas? : HandlerSchemas
+    handler: RouteCallback<BodyType, ParamsType, QueryType>;
+    schemas?: HandlerSchemas;
+}
+interface ContextOptions {
+    parent?: Context;
+    prefix?: string;
 }
 
-export const kRouter = Symbol("Router")
-export const kSchemaProvider = Symbol("Schema Provider")
-export const kErrorSerializer = Symbol("Error Serializer")
-export default abstract class Context {
-    [kRouter]:Router<Handler>;
-    [kSchemaProvider]:SchemaProvider;
-    [kErrorSerializer]:Function
+/**
+ *
+ * @param context The Current context
+ *
+ * Searches up the context tree until a context without a parent is found
+ */
+function findRootContext(context: Context): Context {
+    let parent = context[kParentContext];
+    if (!parent) return context;
+    return findRootContext(parent);
+}
+export const kPrefix = Symbol('Context Route Prefix');
+export const kRouter = Symbol('Router');
+export const kSchemaProvider = Symbol('Schema Provider');
+export const kErrorSerializer = Symbol('Error Serializer');
+export const kParentContext = Symbol('Parent Context');
+export const kChildren = Symbol('Child Contexts');
+export const kHandlerStore = Symbol('Route Store');
+export const kPluginStore = Symbol('Plugin Storage');
+export const kInitializers = Symbol('Initializer Function');
+export default class Context {
+    private [kRouter]: Router<Handler>;
+    private [kSchemaProvider]: SchemaProvider;
+    private [kErrorSerializer]: Function;
+    private [kParentContext]?: Context;
+    private [kChildren]: Context[] = [];
+    private [kPrefix]: string;
 
-    constructor() {
-        this[kRouter] = new Router({})
-        this[kSchemaProvider] = new SchemaProvider()
+    /**
+     * The Initializer Functions run during the
+     * _build() method, and have full access to the context
+     */
+    private [kInitializers]: Function[] = [];
+
+    private [kHandlerStore]: Handler<any, any, any>[] = [];
+
+    constructor(options: ContextOptions = {}) {
+        /*TODO: Implement parent inheritance*/
+        this[kParentContext] = options.parent;
+        this[kPrefix] = fmtUrl(options.prefix ?? this[kParentContext]?.[kPrefix] ?? '/', true);
+
+        if (this[kParentContext]) {
+            // Take the parent's router
+            this[kRouter] = this[kParentContext]![kRouter];
+        } else {
+            this[kRouter] = new Router({});
+        }
+        this[kSchemaProvider] = new SchemaProvider();
         const schema = this[kSchemaProvider].createSchema({
-            type: "object",
-            required: ["statusCode", "error"],
-            properties:{
-              statusCode: {
-                type: "number",
-                min: 100,
-                max:599
-              },
-              error: "string",
-              message: "string"
+            type: 'object',
+            required: ['statusCode', 'error'],
+            properties: {
+                statusCode: {
+                    type: 'number',
+                    min: 100,
+                    max: 599,
+                },
+                error: 'string',
+                message: 'string',
             },
-            strict: true
-          })
-          this[kErrorSerializer] = this[kSchemaProvider].buildSerializer(schema)
+            strict: true,
+        });
+        this[kErrorSerializer] = this[kSchemaProvider].buildSerializer(schema);
     }
 
-
-    public addRoute(params: CreateRouteParams) {
-        const pathHandler = new Handler({
-            listener: params.handler,
-            context: this,
-            schemas: params.schemas || {}
+    /**
+     * Builds the Context, its routes, and it's children
+     *
+     * 1. Executes All Initializers (How plugins work under the hood)
+     * 2. Builds all child contexts > `this.buildChildren()`
+     * 3. Builds all current Handlers > `this.buildHandlers()`
+     * 4. Registers all hooks > `this.registerHooks()`
+     */
+    protected _build() {
+        this.executeInitializers();
+        this.buildChildren();
+        this.buildHandlers();
+    }
+    //#region builder methods
+    protected executeInitializers() {
+        this[kInitializers].forEach((initializer) => {
+            // Initializers take in one params which is the Context
+            initializer(this);
         });
-        this[kRouter].addRoute(params.path, params.method, pathHandler);
+    }
+    protected buildChildren() {
+        this[kChildren].forEach((child) => {
+            child._build();
+        });
+    }
+    protected buildHandlers() {
+        this[kHandlerStore].forEach((handler) => {
+            handler.build();
+            this[kRouter].addRoute(handler.path, handler.method, handler);
+        });
+    }
+
+    protected registerHooks() {}
+    //#endregion
+
+    public addRoute<BT = any, PT = UrlParameters, QT = Querystring>(params: CreateRouteParams<BT, PT, QT>) {
+        const route = this[kPrefix] + '/' + fmtUrl(params.path, true);
+        this[kHandlerStore].push(
+            new Handler({
+                listener: params.handler,
+                context: this,
+                schemas: params.schemas || {},
+                path: route,
+                method: params.method,
+            })
+        );
+    }
+    public use<OptionsType extends PluginOptions>(plugin: PluginCallback<OptionsType>, options?: OptionsType): void {
+        const opts = <OptionsType>(options || {});
+        const rawPrefix = opts.prefix || this[kPrefix];
+
+        // The Prefix to register the plugin under, defaults to parent's prefix
+        const pluginPrefix = fmtUrl(rawPrefix || this[kPrefix], true);
+        const absolutePrefix = this[kPrefix] + '/' + pluginPrefix;
+
+        function doneFunction() {
+            console.log('Done!');
+        }
+        function addIntializer(store: Function[]) {
+            store.push((cwc: Context) => {
+                const _plugin = plugin.bind(cwc);
+                _plugin(cwc, opts, doneFunction);
+            });
+        }
+        if (plugin.global) {
+            const root = findRootContext(this);
+            addIntializer(root[kInitializers]);
+        } else {
+            const child = new Context({ parent: this, prefix: pluginPrefix });
+            this[kChildren].push(child);
+            addIntializer(child[kInitializers]);
+        }
     }
 
     //#region method abstractions
-    get(path: string, options: RouteOptions, callback: RouteCallback): void;
-    get(path: string, callback: RouteCallback): void;
-    get(path: string, arg2:RouteOptions|RouteCallback, arg3?: RouteCallback): void {
-        if(typeof(arg3)==="function" && typeof arg2 ==="object"){
+    get<BodyType = any, ParamsType = UrlParameters, QueryType = Querystring>(path: string, options: RouteOptions, callback: RouteCallback<BodyType, ParamsType, QueryType>): void;
+    get<BodyType = any, ParamsType = UrlParameters, QueryType = Querystring>(path: string, callback: RouteCallback<BodyType, ParamsType, QueryType>): void;
+    get<BodyType = any, ParamsType = UrlParameters, QueryType = Querystring>(path: string, arg2: RouteOptions | RouteCallback, arg3?: RouteCallback): void {
+        if (typeof arg3 === 'function' && typeof arg2 === 'object') {
             this.addRoute({
-                method: "GET",
+                method: 'GET',
                 path: path,
                 handler: arg3,
-                schemas: arg2.schemas
-            })
-        }
-        else{
+                schemas: arg2.schemas,
+            });
+        } else {
             this.addRoute({
-                method: "GET",
+                method: 'GET',
                 path: path,
-                handler: <any>arg2
+                handler: <any>arg2,
             });
         }
     }
 
-    post(path: string, options: RouteOptions, callback: RouteCallback): void;
-    post(path: string, callback: RouteCallback): void; 
-    post(path:string, arg2:RouteOptions|RouteCallback, arg3?:RouteCallback){
-        if(typeof(arg3)==="function"&&typeof arg2==="object"){
+    post<BodyType=any, ParamsType=UrlParameters, QueryType=Querystring>(path: string, options: RouteOptions, callback: RouteCallback<BodyType, ParamsType, QueryType>): void;
+    post<BodyType=any, ParamsType=UrlParameters, QueryType=Querystring>(path: string, callback: RouteCallback<BodyType, ParamsType, QueryType>): void;
+    post<BodyType=any, ParamsType=UrlParameters, QueryType=Querystring>(path: string, arg2: RouteOptions | RouteCallback, arg3?: RouteCallback) {
+        if (typeof arg3 === 'function' && typeof arg2 === 'object') {
             this.addRoute({
-                method: "POST",
+                method: 'POST',
                 path: path,
                 handler: arg3,
-                schemas: arg2.schemas
-            })
-        }
-        else{
+                schemas: arg2.schemas,
+            });
+        } else {
             this.addRoute({
-                method: "POST",
+                method: 'POST',
                 path: path,
-                handler: <any>arg2
+                handler: <any>arg2,
             });
         }
-
     }
-    put(path: string, options: RouteOptions, callback: RouteCallback): void;
-    put(path: string, callback: RouteCallback): void;
-    put(path:string, arg2:RouteOptions|RouteCallback, arg3?:RouteCallback){
-        
-        if(typeof(arg3)==="function"&&typeof arg2==="object"){
+    put<BodyType=any, ParamsType=UrlParameters, QueryType=Querystring>(path: string, options: RouteOptions, callback: RouteCallback<BodyType, ParamsType, QueryType>): void;
+    put<BodyType=any, ParamsType=UrlParameters, QueryType=Querystring>(path: string, callback: RouteCallback<BodyType, ParamsType, QueryType>): void;
+    put<BodyType=any, ParamsType=UrlParameters, QueryType=Querystring>(path: string, arg2: RouteOptions | RouteCallback, arg3?: RouteCallback) {
+        if (typeof arg3 === 'function' && typeof arg2 === 'object') {
             this.addRoute({
-                method: "PUT",
+                method: 'PUT',
                 path: path,
                 handler: arg3,
-                schemas: arg2.schemas
-            })
-        }
-        else{
+                schemas: arg2.schemas,
+            });
+        } else {
             this.addRoute({
-                method: "PUT",
+                method: 'PUT',
                 path: path,
-                handler: <any>arg2
+                handler: <any>arg2,
             });
         }
-
     }
 
-    patch(path: string, options: RouteOptions, callback: RouteCallback): void;
-    patch(path: string, callback: RouteCallback): void;
-    patch(path:string, arg2:RouteOptions|RouteCallback, arg3?:RouteCallback){
-        
-        if(typeof(arg3)==="function"&&typeof arg2==="object"){
+    patch<BodyType=any, ParamsType=UrlParameters, QueryType=Querystring>(path: string, options: RouteOptions, callback: RouteCallback<BodyType, ParamsType, QueryType>): void;
+    patch<BodyType=any, ParamsType=UrlParameters, QueryType=Querystring>(path: string, callback: RouteCallback<BodyType, ParamsType, QueryType>): void;
+    patch<BodyType=any, ParamsType=UrlParameters, QueryType=Querystring>(path: string, arg2: RouteOptions | RouteCallback, arg3?: RouteCallback) {
+        if (typeof arg3 === 'function' && typeof arg2 === 'object') {
             this.addRoute({
-                method: "PATCH",
+                method: 'PATCH',
                 path: path,
                 handler: arg3,
-                schemas: arg2.schemas
-            })
-        }
-        else{
+                schemas: arg2.schemas,
+            });
+        } else {
             this.addRoute({
-                method: "PATCH",
+                method: 'PATCH',
                 path: path,
-                handler: <any>arg2
+                handler: <any>arg2,
             });
         }
-
     }
-    delete(path: string, options: RouteOptions, callback: RouteCallback): void;
-    delete(path: string, callback: RouteCallback): void;
-    delete(path:string, arg2:RouteOptions|RouteCallback, arg3?:RouteCallback){
-        
-        if(typeof(arg3)==="function"&&typeof arg2==="object"){
+    delete<BodyType=any, ParamsType=UrlParameters, QueryType=Querystring>(path: string, options: RouteOptions, callback: RouteCallback<BodyType, ParamsType, QueryType>): void;
+    delete<BodyType=any, ParamsType=UrlParameters, QueryType=Querystring>(path: string, callback: RouteCallback<BodyType, ParamsType, QueryType>): void;
+    delete<BodyType=any, ParamsType=UrlParameters, QueryType=Querystring>(path: string, arg2: RouteOptions | RouteCallback, arg3?: RouteCallback) {
+        if (typeof arg3 === 'function' && typeof arg2 === 'object') {
             this.addRoute({
-                method: "DELETE",
+                method: 'DELETE',
                 path: path,
                 handler: arg3,
-                schemas: arg2.schemas
-            })
-        }
-        else{
+                schemas: arg2.schemas,
+            });
+        } else {
             this.addRoute({
-                method: "DELETE",
+                method: 'DELETE',
                 path: path,
-                handler: <any>arg2
+                handler: <any>arg2,
             });
         }
-
     }
-    options(path: string, options: RouteOptions, callback: RouteCallback): void;
-    options(path: string, callback: RouteCallback): void;
-    options(path:string, arg2:RouteOptions|RouteCallback, arg3?:RouteCallback){
-        
-        if(typeof(arg3)==="function"&&typeof arg2==="object"){
+    options<BodyType=any, ParamsType=UrlParameters, QueryType=Querystring>(path: string, options: RouteOptions, callback: RouteCallback<BodyType, ParamsType, QueryType>): void;
+    options<BodyType=any, ParamsType=UrlParameters, QueryType=Querystring>(path: string, callback: RouteCallback<BodyType, ParamsType, QueryType>): void;
+    options<BodyType=any, ParamsType=UrlParameters, QueryType=Querystring>(path: string, arg2: RouteOptions | RouteCallback, arg3?: RouteCallback) {
+        if (typeof arg3 === 'function' && typeof arg2 === 'object') {
             this.addRoute({
-                method: "OPTIONS",
+                method: 'OPTIONS',
                 path: path,
                 handler: arg3,
-                schemas: arg2.schemas
-            })
-        }
-        else{
+                schemas: arg2.schemas,
+            });
+        } else {
             this.addRoute({
-                method: "OPTIONS",
+                method: 'OPTIONS',
                 path: path,
-                handler: <any>arg2
+                handler: <any>arg2,
             });
         }
-
     }
 
-    head(path: string, options: RouteOptions, callback: RouteCallback): void;
-    head(path: string, callback: RouteCallback): void;
-    head(path:string, arg2:RouteOptions|RouteCallback, arg3?:RouteCallback){
-        
-        if(typeof(arg3)==="function"&&typeof arg2==="object"){
+    head<BodyType=any, ParamsType=UrlParameters, QueryType=Querystring>(path: string, options: RouteOptions, callback: RouteCallback<BodyType, ParamsType, QueryType>): void;
+    head<BodyType=any, ParamsType=UrlParameters, QueryType=Querystring>(path: string, callback: RouteCallback<BodyType, ParamsType, QueryType>): void;
+    head<BodyType=any, ParamsType=UrlParameters, QueryType=Querystring>(path: string, arg2: RouteOptions | RouteCallback, arg3?: RouteCallback) {
+        if (typeof arg3 === 'function' && typeof arg2 === 'object') {
             this.addRoute({
-                method: "HEAD",
+                method: 'HEAD',
                 path: path,
                 handler: arg3,
-                schemas: arg2.schemas
-            })
-        }
-        else{
+                schemas: arg2.schemas,
+            });
+        } else {
             this.addRoute({
-                method: "HEAD",
+                method: 'HEAD',
                 path: path,
-                handler: <any>arg2
+                handler: <any>arg2,
             });
         }
-
     }
     //#endregion
 }

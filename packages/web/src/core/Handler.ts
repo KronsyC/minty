@@ -1,5 +1,6 @@
+import { UrlParameters, Querystring } from './types';
 import { RouteCallback } from '../lib/types';
-import { Request, Response } from '@mintyjs/http';
+import { Method, Request, Response } from '@mintyjs/http';
 import WebRequest from './Request';
 import WebResponse from './Response';
 import Context, { kSchemaProvider } from './Context';
@@ -15,10 +16,12 @@ import {
 import inferMimeType from '../util/inferMimeType';
 import ERR_INVALID_BODY from './errors/misc/ERR_INVALID_BODY';
 import sendError from '../util/sendError';
-interface IHandlerParams {
-    listener: RouteCallback;
+export interface IHandlerParams<BT, PT, QT> {
+    listener: RouteCallback<BT, PT, QT>;
     context: Context;
     schemas: HandlerSchemas;
+    method: Method;
+    path: string;
 }
 
 /**
@@ -63,37 +66,53 @@ const defaultSchemas: InstantiatedHandlerSchemas = {
         '5xx': Presets.any,
     },
 };
+defaultSchemas.body.nullable = true
+defaultSchemas.response["1xx"].nullable = true
+defaultSchemas.response["2xx"].nullable = true
+defaultSchemas.response["3xx"].nullable = true
+defaultSchemas.response["4xx"].nullable = true
+defaultSchemas.response["5xx"].nullable = true
+
 
 
 
 /**
  * A Handler is an isolated class responsible for invoking the user-provided callback and
- * performing any necessary operations on the data before sending it out
+ * performing any preprocessing to requests and responses
+ * 
+ * A Handler is bound to the context in which it is instantiated
  */
-export default class Handler {
-    private listener: RouteCallback;
+export default class Handler<BodyType=any, ParamsType=UrlParameters, QueryType = Querystring> {
+    private listener: RouteCallback<BodyType, ParamsType, QueryType>;
     private context: Context;
+    method: Method;
+    path: string;
 
     private schemaTemplates: HandlerSchemas;
     private schemas: InstantiatedHandlerSchemas = defaultSchemas;
 
-    constructor(params: IHandlerParams) {
+    constructor(params: IHandlerParams<BodyType, ParamsType, QueryType>) {
         this.listener = params.listener;
         this.context = params.context;
         this.schemaTemplates = params.schemas;
+        this.method = params.method
+        this.path = params.path
+    }
+        /**
+         * This Function is called to build all of the dependencies of the Handler, i.e Validators, Parsers, etc.
+         */
+    public build(){
         this.buildSchemas();
         this.buildResponseSerializers();
         this.buildBodyParser();
     }
-    buildSchemas() {
+
+    private buildSchemas() {
         const json = this.context[kSchemaProvider];
         const tml = this.schemaTemplates;
-        //@ts-ignore-error
         tml.params
-            //@ts-ignore-error
             ? (this.schemas.params = json.createSchema(tml.params))
             : null;
-        //@ts-ignore-error
         tml.query ? (this.schemas.query = json.createSchema(tml.query)) : null;
         tml.body ? (this.schemas.body = json.createSchema(tml.body)) : null;
         if (tml.response) {
@@ -110,7 +129,7 @@ export default class Handler {
         this.schemas.query.name = "Query"
         this.schemas.params.name = "Params"
     }
-    buildResponseSerializers() {
+    private buildResponseSerializers() {
         if (this.schemas.response) {
             for (const [name, schema] of Object.entries(
                 this.schemas.response
@@ -119,7 +138,7 @@ export default class Handler {
             }
         }
     }
-    buildBodyParser() {
+    private buildBodyParser() {
         const schema = this.schemas.body;
         
         let parser: Function;
@@ -169,13 +188,14 @@ export default class Handler {
             default:
                 throw new Error(`Cannot build parser for type ${schema.type}`)
             }
-            
+        
         const validator = this.context[kSchemaProvider].buildValidator(schema)
         schema.cache.set("bodyParser", function parse(data:string){
             try{
                 const parsed = parser(data)
                 
                 if(validator(parsed)){
+
                     
                     return parsed
                 }
@@ -207,7 +227,7 @@ export default class Handler {
         })
 
     }
-    parseBody(data: string) {
+    private parseBody(data: string) {
         const parser = this.schemas.body.cache.get("bodyParser")
         return parser(data)
     }
@@ -216,14 +236,15 @@ export default class Handler {
         req.on('data', (chunk) => (rawBody += chunk));
         req.on('end', async() => {
             try{
+
             // Parse the body
             const body = this.parseBody(rawBody);
 
             
-            const webReq = new WebRequest(req, {
-                params: req.params,
-                query: req.query,
-                body: body
+            const webReq = new WebRequest<BodyType, ParamsType, QueryType>(req, {
+                params: req.params as ParamsType,
+                query: req.query as QueryType,
+                body: body as BodyType
             });
             const webRes = new WebResponse(res);
 
