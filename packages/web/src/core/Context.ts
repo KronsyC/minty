@@ -121,7 +121,14 @@ export default class Context {
     //#endregion
 
     public addRoute<BT = any, PT = UrlParameters, QT = Querystring>(params: CreateRouteParams<BT, PT, QT>) {
-        const route = this[kPrefix] + '/' + fmtUrl(params.path, true);
+        let route:string;
+        if(params.path === "*"){
+            route = "*"
+        }
+        else{
+            route = this[kPrefix] + '/' + fmtUrl(params.path, true);
+
+        }
         this[kHandlerStore].push(
             new Handler({
                 listener: params.handler,
@@ -141,7 +148,6 @@ export default class Context {
         const absolutePrefix = this[kPrefix] + '/' + pluginPrefix;
 
         function doneFunction() {
-            console.log('Done!');
         }
         function addIntializer(store: Function[]) {
             store.push((cwc: Context) => {

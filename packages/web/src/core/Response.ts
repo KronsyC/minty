@@ -10,6 +10,8 @@ export default class WebResponse{
     rawResponse:Response
     private _sendCallback?:(data:any)=>void
     private _sendFileCallback?:(location:string)=>void
+    private _redirectCallback?:(url:string)=>void
+    private hasSetStatusCode:boolean=false
     public hasSent:boolean=false
     constructor(res:Response) {
         this.rawResponse = res
@@ -27,6 +29,7 @@ export default class WebResponse{
         return this.rawResponse.statusCode
     }
     status(code:number){
+        this.hasSetStatusCode = true
         this.rawResponse.statusCode = code
         return this
     }
@@ -59,6 +62,21 @@ export default class WebResponse{
         }
         else{
             throw new Error("No Send callback found, please open a github issue")
+        }
+    }
+    redirect(url:string){
+        if(this._redirectCallback){
+            if(!this.hasSent){
+                this.hasSent = true
+                this._redirectCallback(url)
+            }
+            else{
+                throw new Error("Cannot send response more than once")
+            }
+
+        }
+        else{
+            throw new Error("No Redirect callback found, please open a github issue")
         }
     }
     set(name:string, value: string|string[]|number){

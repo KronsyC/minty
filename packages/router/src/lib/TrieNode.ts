@@ -17,6 +17,11 @@ interface PathHandlers<HT> {
     ALL?: HT;
 }
 
+interface TrieNodeOptions<HT>{
+    handlers?: PathHandlers<HT>
+    overridable?:boolean;
+}
+
 // Radix tree based routing
 export default class TrieNode<HT> {
     terminal: boolean; // Is this node the end of a path
@@ -25,7 +30,14 @@ export default class TrieNode<HT> {
     value?: any;
     name: string;
     router: Router<HT>;
-    rootNode:boolean=false
+    rootNode:boolean=false;
+    /**
+     * This is some metadata which tells the router wether to allow   
+     * the user to overwrite the specific route or throw an error
+     * 
+     * defaults to false
+     */
+    overridable: boolean=false;
 
     /**
      *
@@ -33,16 +45,20 @@ export default class TrieNode<HT> {
      * @param name The Name of the route segment
      * @param handlers An Object Representing the mappings of HTTP methods to The Chosen Handler Type
      */
-    constructor(router: Router<HT>, name: string, handlers?: PathHandlers<HT>) {
+    constructor(router: Router<HT>, name: string, options:TrieNodeOptions<HT>={}) {
         this.router = router;
         this.children = [];
         this.name = name;
-
+        const handlers = options.handlers
         if (handlers) {
             this.terminal = true;
             this.handlers = handlers;
         } else {
             this.terminal = false;
+        }
+
+        if(options.overridable){
+            this.overridable = true
         }
     }
     private extractPath(path: string): string[] {

@@ -1,9 +1,21 @@
+import fs from 'fs';
 import { ServerLifecycleStage } from './types';
 import Context, { kRouter, kSchemaProvider } from './Context';
 import HttpServer, { Request, Response } from '@mintyjs/http';
 import { ListenMethod } from '../lib/types';
 import sendError from '../util/sendError';
+import NotFound from './errors/NotFound';
+import path from 'path';
 export const kBaseServer = Symbol("Base Server")
+
+interface ServeStaticDirectoryOptions{
+  prefix?:string;
+  index?: string;
+  etag?: boolean;
+  defaultHeaders? : {[x:string]:string}
+}
+
+
 declare module "@mintyjs/http"{
   interface Request{
     params:{
@@ -19,7 +31,9 @@ interface ServerOptions{
   prefix?:string;
 }
 const kServerState = Symbol("Server lifecycle stage")
-
+interface WildcardParams{
+  "*" : string
+}
 
 /**
  * The Server lifecycle has 5 states
@@ -52,14 +66,16 @@ export default class Server extends Context {
   }
   private async handleRequest(req: Request, res: Response) {
     try {
+      
       this.poweredByHeader?res.setHeader("X-Powered-By", "MintWeb"):null
         res.setHeader('X-Content-Type-Options', 'nosniff');
 
         // Do a router lookup
         const { handler, params, query } = this[kRouter].find(req.url, req.method)
+          
         req.params = params;
         req.query = query;
-
+      
         await handler.handle(req, res);
     }
      catch (err: any) {
@@ -89,7 +105,6 @@ export default class Server extends Context {
     }
     if(this.stage !== "building"){
       this[kBaseServer].listen(arg1, arg2, arg3, arg4);
-      console.log("Listening");
     }
     else{
       throw new Error(`Cannot listen from ${this.stage} state`)
@@ -98,4 +113,30 @@ export default class Server extends Context {
     
   }
 
+  public static(location:string, options:ServeStaticDirectoryOptions={}){
+   this.get<any, WildcardParams>("*", async(req, res) => {
+     
+     let requestPath:string = req.params["*"]
+     
+     if(!requestPath)requestPath="index.html"
+     const segments = requestPath.split("/")
+
+     // Default extension is .html
+     const lastSegment = segments[segments.length-1]
+     
+     if(!lastSegment.includes(".")){
+       
+        segments[segments.length-1]+=".html"
+     }
+     const filePath = path.join(location, ...segments )
+     
+     if(!filePath.startsWith(location)){
+       
+       sendError(new NotFound(`Could not ${req.method} ${req.path}`), res.rawResponse, this)
+     }
+     else{
+       res.sendFile(filePath)
+     }
+   }) 
+  }
 }

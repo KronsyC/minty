@@ -40,7 +40,7 @@ export default class Router<HT> {
     //#endregion
     parentRouter?: Router<HT>;
     private prefix: string = '/';
-    private _addRoute(path: string, method: Method, handler: HT) {
+    private _addRoute(path: string, method: Method, handler: HT, overridable:boolean) {
         const location = path.split('/');
 
         if (location[0] === '') {
@@ -55,12 +55,14 @@ export default class Router<HT> {
                     if (index === location.length - 1) {
                         currentNode.terminal = true;
                         if (currentNode.handlers) {
-                            if (!currentNode.handlers[method]) {
+                            if (!currentNode.handlers[method] || currentNode.overridable) {
                                 currentNode.handlers[method] = handler;
                             } else {
                                 throw new LERR_DUPLICATE_ROUTES(
                                     `Duplicate Handlers registered for ${method} ${path}`
                                 );
+
+                                
                             }
                         } else {
                             let hndlr: any = {};
@@ -73,7 +75,10 @@ export default class Router<HT> {
                     if (index === location.length - 1) {
                         let hndlr: any = {};
                         hndlr[method] = handler;
-                        currentNode.addChild(new TrieNode(this, part, hndlr));
+                        currentNode.addChild(new TrieNode(this, part, {
+                            handlers: hndlr,
+                            overridable: overridable
+                        }));
                     } else {
                         // Generate empty node
 
@@ -84,13 +89,15 @@ export default class Router<HT> {
             });
         }
     }
-    addRoute(path: string, method: Method, handler: HT) {
+    addRoute(path: string, method: Method, handler: HT, overridable=false) {
+        
         // Set the path as a root wildcard if it is a plain star with no preceeding slash
         if(path==="*"){
+            
             path = "_*"
         }
         path = fmtUrl(path, this.ignoreTrailingSlash);
-        this._addRoute(path, method, handler);
+        this._addRoute(path, method, handler, overridable);
     }
 
     private _find(path: string, method: Method) {        

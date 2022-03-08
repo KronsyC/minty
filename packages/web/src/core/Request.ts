@@ -18,7 +18,12 @@ export default class WebRequest<BodyType=any, ParamsType=UrlParameters, QueryTyp
         this.query=opts.query
         this.body= opts.body
     }
-
+    get path(){
+        return this.rawRequest.url.split("?")[0]
+    }
+    get method(){
+        return this.rawRequest.method
+    }
     get headers():RequestHeaders{
         return this.rawRequest.headers
     }
