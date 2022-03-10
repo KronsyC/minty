@@ -137,9 +137,12 @@ export default class Handler<BodyType = any, ParamsType = UrlParameters, QueryTy
     }
     private buildParamsNormalizer(){
         const wildCardSchema = Presets.string
+        // Force Wildcards in the schema
         this.schemas.params.properties.set("*", wildCardSchema)
         const normalizer = this.context[kSchemaProvider].buildNormalizer(this.schemas.params)
+        const validator = this.context[kSchemaProvider].buildValidator(this.schemas.params)
         this.schemas.params.cache.set("normalizer", normalizer)
+        this.schemas.params.cache.set("validator", validator)
     }
     private buildBodyParser() {
         const schema = this.schemas.body;
@@ -234,12 +237,26 @@ export default class Handler<BodyType = any, ParamsType = UrlParameters, QueryTy
         let rawBody = '';
         req.on('data', (chunk) => (rawBody += chunk));
         req.on('end', async () => {
+            
             try {
                 // Parse the body
                 const body = this.parseBody(rawBody);
-                const normalizer = this.schemas.params.cache.get("normalizer")
+                const paramsNormalizer = this.schemas.params.cache.get("normalizer")
+
+                let urlParameters;
+                try{
+                    urlParameters = paramsNormalizer(req.params)
+                }
+                catch(err:any){
+                    
+                    //TODO: Fix the normalizer code so that it forwards the validator error
+                    err.statusCode = 400
+                    err.internal = false
+                    
+                    sendError(err, res, this.context)
+                    return
+                }
                 
-                const urlParameters = normalizer(req.params)
                 
                 const webReq = new WebRequest<BodyType, ParamsType, QueryType>(req, {
                     params: urlParameters as ParamsType,
@@ -250,15 +267,19 @@ export default class Handler<BodyType = any, ParamsType = UrlParameters, QueryTy
 
                 const sendCallback = (data:any) => {
                     try{
+                        
                         const [serialized, mimeType] = this.serializeResponse(data, webRes);
                         
                         if (!res.getHeader('content-type')) {
                             res.setHeader('content-type', mimeType);
                         }
+                        
                         res.end(serialized);
                         webRes.hasSent=true
                     }
                     catch(err){
+                        
+                        
                         sendError(err, res, this.context)
                     }
 
@@ -298,7 +319,7 @@ export default class Handler<BodyType = any, ParamsType = UrlParameters, QueryTy
                         sendCallback(data)
                     }
                 });
-            } catch (err) {
+            } catch (err:any) {                
                 sendError(err, res, this.context);
             }
         });

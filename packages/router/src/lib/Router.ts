@@ -17,7 +17,7 @@ interface QueryType{
 /**
  * REFERENCE
  *              * = wildcard route
- *              _* = Root Wildcard route
+ *              ** = Root Wildcard route
  */
 export default class Router<HT> {
     //#region constructor
@@ -91,11 +91,6 @@ export default class Router<HT> {
     }
     addRoute(path: string, method: Method, handler: HT, overridable=false) {
         
-        // Set the path as a root wildcard if it is a plain star with no preceeding slash
-        if(path==="*"){
-            
-            path = "_*"
-        }
         path = fmtUrl(path, this.ignoreTrailingSlash);
         this._addRoute(path, method, handler, overridable);
     }
@@ -123,18 +118,15 @@ export default class Router<HT> {
         let wildcard: TrieNode<HT>;     
         let wildcardIndex:number=0;   
         // Add the root wildcard as the wildcard
-        if(current.hasChild("_*", true)){
-            wildcard=current.getChild("_*")
-        }
   
         if(path === ""){
             let handler = current.getHandler(method)    
 
             if(!handler){
                 // Check if router has a root wildcard
-                if(current.hasChild("_*", true)){
-                    handler = current.getChild("_*").getHandler(method)
-                    
+                if(current.hasChild("**", true)){
+                    handler = current.getChild("**").getHandler(method)
+                    wildcardIndex = 0
                 }
                 else{
                     if(!current.handlers){
@@ -151,6 +143,8 @@ export default class Router<HT> {
             // A way to fasttrack out of the loop, forEach does not have a break feature
             if(brk)return
             
+
+            // Wildcard takes priority over root wildcard
             if (current.hasChild('*', true)) {
                 
                 wildcard = current.getChild('*');
@@ -161,6 +155,7 @@ export default class Router<HT> {
             // A returned templatename means that the router has a child x
             const templateName = current.hasChild(part)
             function retWildcard(){
+                
                 brk=true                
                 // The path parts traversed after the wildcard was found
                 const remainingPath = parts.slice(wildcardIndex)
@@ -173,8 +168,7 @@ export default class Router<HT> {
                     handler = methodHandler;
                 } else if (wildcard.handlers && wildcard.handlers['ALL']) {
                     handler = wildcard.handlers['ALL'];
-                } else {
-                    
+                } else {                    
                     throw new ERR_METHOD_NOT_ALLOWED(`Cannot ${method} /${path}`);
                 }
             }
@@ -205,9 +199,14 @@ export default class Router<HT> {
                     }
                 }
                 current = current.getChild(part);
-                
+                if(current.hasChild("**", true)){
+                    
+                    wildcard = current.getChild('**');
+                    wildcardIndex = index
+                }
                 // If this is the last path part, return the handler
                 if (index === parts.length - 1 && current.handlers) {
+                    
                     handler = current.getHandler(method)
                     // No handler
                     if(!handler)throw new ERR_METHOD_NOT_ALLOWED(`Cannot ${method} /${path}`)       
@@ -216,9 +215,13 @@ export default class Router<HT> {
                 // Attempt to use a wildcard
                 // Else, 404
                  else if (index === parts.length - 1 && !current.terminal) {
-                     if(wildcard)retWildcard()
-                     return
-                    throw new ERR_NOT_FOUND(`Cannot ${method} /${path}`);
+                    
+                     if(wildcard){
+                         retWildcard()
+                     }
+                     else{
+                        throw new ERR_NOT_FOUND(`Cannot ${method} /${path}`);
+                     }
                 } else {
                     // Proceed through the tree
                 }

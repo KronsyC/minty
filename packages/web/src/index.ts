@@ -12,7 +12,10 @@ interface CreateUserBody{
 interface GetUserParams{
     userid: number
 }
-
+app.on("routeRegister", (metadata, done) => {
+    console.log(`Registering ${metadata.method} ${metadata.path}`);
+    done()
+})
 app.use((app, options, done) => {
     app.get("/", async(req, res) => {
         return "Base API route"
@@ -23,56 +26,43 @@ app.use((app, options, done) => {
             response: {
                 "2xx": {
                     type: "object",
-                    required: "all",
+                    required: ["statusCode", "message", "userid"],
                     properties: {
                         statusCode: "number",
                         message: "string",
-                        userid: "number"
+                        userid: "number",
+                        authorization: "any"
                     },
                     strict: true
                 }
             },
             params: {
                 type: "object",
+                required: "all",
                 properties: {
                     userid: "number"
-                }
+                },
+                strict: true
             }
         }
     }, async(req, res) => {
         return {
             statusCode: 200,
             message: "Successfully fetched User",
-            userid: req.params.userid
+            userid: req.params.userid,
+            authorization: "xxxxxxx.xxxxxxxxxxxxxx.xxxxxxx"
         }
     })
     done()
 }, {prefix: "/api"})
 
-app.get("/brew", async(req, res )=> {
-    res.status(418)
-    return `
-    I'm a little teapot,
-    Short and stout,
-    Here is my handle
-    Here is my spout
-    When I get all steamed up,
-    Hear me shout,
-    Tip me over and pour me out!
-    
-    I'm a very special teapot,
-    Yes, it's true,
-    Here's an example of what I can do,
-    I can turn my handle into a spout,
-    Tip me over and pour me out!`
+
+app.static(path.join(__dirname, "static"), {
+    prefix: "/static",
+    defaultHeaders: {
+        "X-Hello": "World"
+    }
 })
-
-app.get("/discord", async(req, res) => {
-    res.redirect("https://discord.gg/AFB9HaRG")
-})
-
-
-app.static(path.join(__dirname, "static"))
 
 app.listen(3000, (url)=>{
     console.log(`Server listening at ${url}`);

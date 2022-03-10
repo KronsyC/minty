@@ -2,6 +2,11 @@
 # yarn lockfile v1
 
 
+"@types/clone@^2.1.1":
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/@types/clone/-/clone-2.1.1.tgz#9b880d0ce9b1f209b5e0bd6d9caa38209db34024"
+  integrity sha512-BZIU34bSYye0j/BFcPraiDZ5ka6MJADjcDVELGf7glr9K+iE8NYVjFslJFVWzskSxkLLyCrSPScE82/UUoBSvg==
+
 "@types/memoizee@^0.4.7":
   version "0.4.7"
   resolved "https://registry.yarnpkg.com/@types/memoizee/-/memoizee-0.4.7.tgz#fa0025b5ea1c8acb85fd52a76982c5a096c2c91e"
@@ -16,6 +21,11 @@
   version "17.0.10"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.10.tgz#616f16e9d3a2a3d618136b1be244315d95bd7cab"
   integrity sha512-S/3xB4KzyFxYGCppyDt68yzBU9ysL88lSdIah4D6cptdcltc4NCPCAMc0+PCpg/lLIyC7IPvj2Z52OJWeIUkog==
+
+clone@^2.1.2:
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/clone/-/clone-2.1.2.tgz#1b7f4b9f591f1e8f83670401600345a02887435f"
+  integrity sha1-G39Ln1kfHo+DZwQBYANFoCiHQ18=
 
 d@1, d@^1.0.1:
   version "1.0.1"
@@ -75,6 +85,14 @@ ext@^1.1.2:
   integrity sha512-sdBImtzkq2HpkdRLtlLWDa6w4DX22ijZLKx8BMPUuKe1c5lbN6xwQDQCxSfxBQnHZ13ls/FH0MQZx/q/gr6FQg==
   dependencies:
     type "^2.5.0"
+
+inside-in@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/inside-in/-/inside-in-1.0.5.tgz#8bc93bb4ffbbdbbaf9ac796cef97152ff72f759e"
+  integrity sha512-J5zIX9Ihv9CAo6VLO7B9j1HlfyJ4KZ9b6GKS81XNzlNCzVIHShFnglQbkmbIF81FtOWJyh8bBZPrwxE+hyqRtw==
+  dependencies:
+    "@types/clone" "^2.1.1"
+    clone "^2.1.2"
 
 is-promise@^2.2.2:
   version "2.2.2"

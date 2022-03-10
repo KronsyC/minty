@@ -7,6 +7,7 @@
   "dependencies": {
     "@types/memoizee": "^0.4.7",
     "fast-json-stringify": "^3.0.2",
+    "inside-in": "^1.0.5",
     "memoizee": "^0.4.15",
     "schematica": "^1.1.14",
     "tslib": "^2.0.0"

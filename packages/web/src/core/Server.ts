@@ -1,17 +1,17 @@
 import fs from 'fs';
 import { ServerLifecycleStage } from './types';
-import Context, { kRouter, kSchemaProvider } from './Context';
+import Context, { kRouter } from './Context';
 import HttpServer, { Request, Response } from '@mintyjs/http';
 import { ListenMethod } from '../lib/types';
 import sendError from '../util/sendError';
 import NotFound from './errors/NotFound';
 import path from 'path';
+import formatUrl from '@mintyjs/fmturl';
 export const kBaseServer = Symbol("Base Server")
 
 interface ServeStaticDirectoryOptions{
   prefix?:string;
   index?: string;
-  etag?: boolean;
   defaultHeaders? : {[x:string]:string}
 }
 
@@ -34,7 +34,27 @@ const kServerState = Symbol("Server lifecycle stage")
 interface WildcardParams{
   "*" : string
 }
-
+/**
+ * Events Reference
+ * 
+ * ----- Context Events -----   
+ * `prePluginLoad` - Modify a context before its initializer code is run   
+ * `onRouteRegister` - Listen for when a route is registered and get some metadata about it
+ *   
+ *  ----- Server Events -----    
+ * `onClose` -  Triggers when the server stops 
+ * `onReady` - Triggers when the server is listening
+ * 
+ * 
+ * ------- Request / Response Modification Hooks ------------------------   
+ * `preParse` - Modify the raw data before the parser is run   
+ * `preValidation` - Modify the body before validation   
+ * `preSerialization` - Modify Response Data before it is stringified and sent off   
+ * `preHandle` - Modify the request and response objects before the handler is triggered  
+ * 
+ * --------- Request / Response Event Hooks ------------------------   
+ * onRequest
+ */
 /**
  * The Server lifecycle has 5 states
  * 1. Loading - Defining all of the routes, plugins, and hooks > ends with app.build()
@@ -72,7 +92,7 @@ export default class Server extends Context {
 
         // Do a router lookup
         const { handler, params, query } = this[kRouter].find(req.url, req.method)
-          
+        
         req.params = params;
         req.query = query;
       
@@ -82,8 +102,6 @@ export default class Server extends Context {
         sendError(err, res, this);
     }
 }
-
-
   public build(){
     if(this[kServerState]==="loading"){
       this[kServerState] = "building"
@@ -114,13 +132,18 @@ export default class Server extends Context {
   }
 
   public static(location:string, options:ServeStaticDirectoryOptions={}){
-   this.get<any, WildcardParams>("*", async(req, res) => {
+    const prefix = formatUrl(options.prefix||"", false)
+    
+    
+   this.get<any, WildcardParams>(`${prefix?prefix+"/":""}**`, async(req, res) => {
      
-     let requestPath:string = req.params["*"]
+     let requestPath:string = formatUrl(req.params["*"]||"/", true)
      
+     requestPath = requestPath.slice(prefix.length)
      if(!requestPath)requestPath="index.html"
+     
      const segments = requestPath.split("/")
-
+    
      // Default extension is .html
      const lastSegment = segments[segments.length-1]
      
@@ -135,6 +158,13 @@ export default class Server extends Context {
        sendError(new NotFound(`Could not ${req.method} ${req.path}`), res.rawResponse, this)
      }
      else{
+       // Default Headers
+       if(options.defaultHeaders){
+        for(let header in options.defaultHeaders){
+          res.set(header, options.defaultHeaders[header])
+        }
+       }
+
        res.sendFile(filePath)
      }
    }) 
