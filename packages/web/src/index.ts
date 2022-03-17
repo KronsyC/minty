@@ -1,8 +1,10 @@
 import Server from "./core/Server";
 import path from "node:path"
+import fs from "node:fs"
 const app = new Server({
     poweredByHeader: false
 })
+
 
 interface CreateUserBody{
     username: string;
@@ -12,11 +14,10 @@ interface CreateUserBody{
 interface GetUserParams{
     userid: number
 }
-app.on("routeRegister", (metadata, done) => {
-    console.log(`Registering ${metadata.method} ${metadata.path}`);
-    done()
-})
 app.use((app, options, done) => {
+    app.setNotFoundHandler(async(req, res) => {
+        return "api not found OwO"
+    })
     app.get("/", async(req, res) => {
         return "Base API route"
     })
@@ -46,17 +47,20 @@ app.use((app, options, done) => {
             }
         }
     }, async(req, res) => {
+
+
         return {
             statusCode: 200,
             message: "Successfully fetched User",
-            userid: req.params.userid,
-            authorization: "xxxxxxx.xxxxxxxxxxxxxx.xxxxxxx"
+            userid: req.params.userid
         }
     })
     done()
 }, {prefix: "/api"})
 
-
+app.setNotFoundHandler(async(req, res) => {
+    return "Not Found UwU"
+})
 app.static(path.join(__dirname, "static"), {
     prefix: "/static",
     defaultHeaders: {
@@ -64,6 +68,13 @@ app.static(path.join(__dirname, "static"), {
     }
 })
 
-app.listen(3000, (url)=>{
+app.get("/", async(req, res) => {
+    return req.headers
+})
+app.post("/", async(req, res) => {
+    return req.headers
+})
+
+app.listen(3000, url=>{
     console.log(`Server listening at ${url}`);
 })

@@ -1,33 +1,33 @@
-import { UrlParameters, Querystring } from './types';
-import { RouteCallback } from '../lib/types';
-import { Method, Request, Response } from '@mintyjs/http';
-import WebRequest from './Request';
-import WebResponse from './Response';
-import Context, { kSchemaProvider } from './Context';
+import { UrlParameters, Querystring, RouteCallback } from './types';
+import { Method as HTTPMethod, Request as HttpRequest, Response as HttpResponse } from '@mintyjs/http';
+import Context, { kInterceptors } from './Context';
 import mimeTypes from 'mime-types';
-import { presets, Presets } from 'schematica';
+import { GenericSchemaTemplate, Presets } from 'schematica';
 import fs from 'node:fs';
 import { GenericSchema as Schema, ObjectSchema, ObjectSchemaTemplate, GenericSchemaTemplate as SchemaTemplate } from 'schematica';
 import inferMimeType from '../util/inferMimeType';
 import ERR_INVALID_BODY from './errors/misc/ERR_INVALID_BODY';
-import sendError from '../util/sendError';
 import NotFound from './errors/NotFound';
+import Request, { kParams } from './io/Request';
+import Response, { kCreateSendCallback } from "./io/Response"
+
+
+type Method = HTTPMethod | "ALL"
 export interface IHandlerParams<BT, PT, QT> {
     listener: RouteCallback<BT, PT, QT>;
     context: Context;
     schemas: HandlerSchemas;
     method: Method;
     path: string;
+    addToRouter?:boolean
 }
 
-/**
- * These are the schema constructors used to build request validators and response serializers
- */
 export interface HandlerSchemas {
     body?: SchemaTemplate;
     query?: ObjectSchemaTemplate;
     params?: ObjectSchemaTemplate;
     response?: {
+        'all'?: SchemaTemplate;
         '1xx'?: SchemaTemplate;
         '2xx'?: SchemaTemplate;
         '3xx'?: SchemaTemplate;
@@ -43,6 +43,7 @@ interface InstantiatedHandlerSchemas {
     query: ObjectSchema;
     params: ObjectSchema;
     response: {
+        'all': Schema
         '1xx': Schema;
         '2xx': Schema;
         '3xx': Schema;
@@ -58,24 +59,28 @@ interface InstantiatedHandlerSchemas {
  *
  * A Handler is bound to the context in which it is instantiated
  */
-export default class Handler<BodyType = any, ParamsType = UrlParameters, QueryType = Querystring> {
+export default class Handler<BodyType = any, ParamsType extends {} = UrlParameters, QueryType extends {} = Querystring> {
 
 
-
+    private modifiedSchemas:string[] = []
     private listener: RouteCallback<BodyType, ParamsType, QueryType>;
     private context: Context;
     method: Method;
     path: string;
+    addToRouter:boolean;
 
     private schemaTemplates: HandlerSchemas;
     private schemas: InstantiatedHandlerSchemas;
 
     constructor(params: IHandlerParams<BodyType, ParamsType, QueryType>) {
         this.listener = params.listener;
+        this.addToRouter = params.addToRouter??true
         this.context = params.context;
         this.schemaTemplates = params.schemas;
         this.method = params.method;
         this.path = params.path;
+
+        
 
         const defaultSchemas: InstantiatedHandlerSchemas = {
             body: Presets.any,
@@ -87,6 +92,7 @@ export default class Handler<BodyType = any, ParamsType = UrlParameters, QueryTy
                 '3xx': Presets.any,
                 '4xx': Presets.any,
                 '5xx': Presets.any,
+                'all': Presets.any
             },
         };
         defaultSchemas.body.nullable = true;
@@ -95,6 +101,8 @@ export default class Handler<BodyType = any, ParamsType = UrlParameters, QueryTy
         defaultSchemas.response['3xx'].nullable = true;
         defaultSchemas.response['4xx'].nullable = true;
         defaultSchemas.response['5xx'].nullable = true;
+        defaultSchemas.response["all"].nullable = true
+
 
         this.schemas = defaultSchemas
     }
@@ -102,6 +110,7 @@ export default class Handler<BodyType = any, ParamsType = UrlParameters, QueryTy
      * This Function is called to build all of the dependencies of the Handler, i.e Validators, Parsers, etc.
      */
     public build() {
+        
         this.buildSchemas();
         this.buildResponseSerializers();
         this.buildParamsNormalizer()
@@ -109,19 +118,25 @@ export default class Handler<BodyType = any, ParamsType = UrlParameters, QueryTy
     }
 
     private buildSchemas() {
-        const json = this.context[kSchemaProvider];
+        const json = this.context.schematicaInstance;
+        const create = (template:any):any => {
+            this.modifiedSchemas.push(template.id)
+            return json.createSchema(template)
+        }
         const tml = this.schemaTemplates;
-        tml.params ? (this.schemas.params = json.createSchema(tml.params)) : null;
-        tml.query ? (this.schemas.query = json.createSchema(tml.query)) : null;
-        tml.body ? (this.schemas.body = json.createSchema(tml.body)) : null;
+        tml.params ? (this.schemas.params = create(tml.params)) : null;
+        tml.query ? (this.schemas.query = create(tml.query)) : null;
+        tml.body ? (this.schemas.body = create(tml.body)) : null;
         if (tml.response) {
             const res = tml.response;
             const ress = this.schemas.response;
-            res['1xx'] ? (ress['1xx'] = json.createSchema(res['1xx'])) : null;
-            res['2xx'] ? (ress['2xx'] = json.createSchema(res['2xx'])) : null;
-            res['3xx'] ? (ress['3xx'] = json.createSchema(res['3xx'])) : null;
-            res['4xx'] ? (ress['4xx'] = json.createSchema(res['4xx'])) : null;
-            res['5xx'] ? (ress['5xx'] = json.createSchema(res['5xx'])) : null;
+            res['1xx'] ? (ress['1xx'] = create(res['1xx'])) : null;
+            res['2xx'] ? (ress['2xx'] = create(res['2xx'])) : null;
+            res['3xx'] ? (ress['3xx'] = create(res['3xx'])) : null;
+            res['4xx'] ? (ress['4xx'] = create(res['4xx'])) : null;
+            res['5xx'] ? (ress['5xx'] = create(res['5xx'])) : null;
+            res['all'] ? (ress['all'] = create(res['all'])) : null;
+
         }
         // Set Names
         this.schemas.body.name = 'Body';
@@ -131,7 +146,7 @@ export default class Handler<BodyType = any, ParamsType = UrlParameters, QueryTy
     private buildResponseSerializers() {
         if (this.schemas.response) {
             for (const [name, schema] of Object.entries(this.schemas.response)) {
-                this.context[kSchemaProvider].buildSerializer(schema, {onAdditionalProperty: "skip"});
+                this.context.schematicaInstance.buildSerializer(schema, {onAdditionalProperty: "skip"});
             }
         }
     }
@@ -139,8 +154,8 @@ export default class Handler<BodyType = any, ParamsType = UrlParameters, QueryTy
         const wildCardSchema = Presets.string
         // Force Wildcards in the schema
         this.schemas.params.properties.set("*", wildCardSchema)
-        const normalizer = this.context[kSchemaProvider].buildNormalizer(this.schemas.params)
-        const validator = this.context[kSchemaProvider].buildValidator(this.schemas.params)
+        const normalizer = this.context.schematicaInstance.buildNormalizer(this.schemas.params)
+        const validator = this.context.schematicaInstance.buildValidator(this.schemas.params)
         this.schemas.params.cache.set("normalizer", normalizer)
         this.schemas.params.cache.set("validator", validator)
     }
@@ -148,7 +163,7 @@ export default class Handler<BodyType = any, ParamsType = UrlParameters, QueryTy
         const schema = this.schemas.body;
 
         let parser: Function;
-        const schematicaParser = this.context[kSchemaProvider].buildParser(schema);
+        const schematicaParser = this.context.schematicaInstance.buildParser(schema);
 
         switch (schema.type) {
             case 'string':
@@ -198,7 +213,7 @@ export default class Handler<BodyType = any, ParamsType = UrlParameters, QueryTy
                 throw new Error(`Cannot build parser for type ${schema.type}`);
         }
         
-        const validator = this.context[kSchemaProvider].buildValidator(schema);
+        const validator = this.context.schematicaInstance.buildValidator(schema);
         schema.cache.set('bodyParser', function parse(data: string) {
             
             try {
@@ -232,142 +247,164 @@ export default class Handler<BodyType = any, ParamsType = UrlParameters, QueryTy
         return parser(data);
     }
 
-    async handle(req: Request, res: Response) {
-
+    async handle(req:Request<BodyType, ParamsType, QueryType>, res: Response) {
+        
+        // Accumulate the raw request body into a string        
         let rawBody = '';
-        req.on('data', (chunk) => (rawBody += chunk));
-        req.on('end', async () => {
+        req.rawRequest.on('data', (chunk) => (rawBody += chunk));
+        req.rawRequest.on('end', async () => {
             
             try {
                 // Parse the body
-                const body = this.parseBody(rawBody);
                 const paramsNormalizer = this.schemas.params.cache.get("normalizer")
+                
+                let urlParameters = req.params??{};
+                urlParameters = paramsNormalizer(urlParameters)
 
-                let urlParameters;
-                try{
-                    urlParameters = paramsNormalizer(req.params)
-                }
-                catch(err:any){
-                    
-                    //TODO: Fix the normalizer code so that it forwards the validator error
-                    err.statusCode = 400
-                    err.internal = false
-                    
-                    sendError(err, res, this.context)
-                    return
-                }
                 
                 
-                const webReq = new WebRequest<BodyType, ParamsType, QueryType>(req, {
-                    params: urlParameters as ParamsType,
-                    query: req.query as QueryType,
-                    body: body as BodyType,
-                });
-                const webRes = new WebResponse(res);
+                
+                // Update the request parameters with their normalized form
+                req[kParams] = urlParameters
 
-                const sendCallback = (data:any) => {
-                    try{
-                        
-                        const [serialized, mimeType] = this.serializeResponse(data, webRes);
-                        
-                        if (!res.getHeader('content-type')) {
-                            res.setHeader('content-type', mimeType);
-                        }
-                        
-                        res.end(serialized);
-                        webRes.hasSent=true
-                    }
-                    catch(err){
-                        
-                        
-                        sendError(err, res, this.context)
-                    }
-
-                }
+                const context = this.context
+                //#region callbacks
                 const sendFileCallback = (location: string) => {
                     fs.readFile(location, (err, data) => {
                         if (err){
-                            sendError(new NotFound(`Could not ${req.method} ${req.url}`), res, this.context)
+                            context.sendError(req, res, new NotFound(`File ${req.path} not found`))
                             return
                         };
                         const mimeType = mimeTypes.contentType(location);
 
                         if (mimeType) {
-                            res.setHeader('content-type', mimeType);
-                            res.setHeader('content-length', data.buffer.byteLength);
-                            res.end(data);
+                            res.set('content-type', mimeType);
+                            res.set('content-length', data.buffer.byteLength);
+                            res.rawResponse.end(data);
                         } else {
-                            sendError(new Error(`Could not get valid mime type for ${location}`), res, this.context)
+                            context.sendError(req, res,new Error(`Could not get valid mime type for ${location}`))
                         }
                     });
                 };
-
                 const redirectCallback = (url:string) => {
                     // Redirect to an external location
-                    if(!webRes["hasSetStatusCode"]){
-                        res.statusCode = 307
+                    if(!res["hasSetStatusCode"]){
+                        res.status(307)
                     }
-                    res.setHeader("location", url)
-                    res.end("Redirect")
+                    res.set("location", url)
+                    res.rawResponse.end(`Redirect to ${url}`)
                 }
-                webRes["_redirectCallback"] = redirectCallback
-                webRes['sendCallback'] = sendCallback;
-                webRes['sendFileCallback'] = sendFileCallback;
+                //#endregion
+                
+                //@ts-expect-error
+                res[kCreateSendCallback](this, req);
+                
+                // res['sendFileCallback'] = sendFileCallback;
+
+                // Execute all of the context request interceptors
+                await this.executeRequestInterceptors(req, res)
+                
                 const routeHandler = this.listener.bind(this.context);
-                routeHandler(webReq, webRes).then((data) => {
-                    if (data && !webRes.hasSent) {
-                        sendCallback(data)
+                routeHandler(req, res)
+                .then((data) => {
+                    if(data){
+                        res.send(data)
+
                     }
-                });
+                })
+                .catch( err => {
+                    context.sendError(req, res, err)
+                    
+                } )
             } catch (err:any) {                
-                sendError(err, res, this.context);
+                this.context.sendError(req, res, err)
+                
+                
             }
         });
 
     }
     getSchemaForStatus(code: number) {
         const schemas = this.schemas.response;
-        const firstDigit = code.toString()[0];
-        switch (firstDigit) {
-            case '1':
-                return schemas['1xx'];
-            case '2':
-                return schemas['2xx'];
-            case '3':
-                return schemas['3xx'];
-            case '4':
-                return schemas['4xx'];
-            case '5':
-                return schemas['5xx'];
-
+        let schema:Schema;
+        const firstdigit = code.toString()[0]
+        switch (firstdigit) {
+            case "1":
+                schema= schemas['1xx'];
+                break;
+            case "2":
+                schema= schemas['2xx'];
+                break;
+            case "3":
+                schema= schemas['3xx'];
+                break;
+            case "4":
+                schema= schemas['4xx'];
+                break;
+            case "5":
+                schema= schemas['5xx'];
+                break;
             default:
                 throw new Error(`Code ${code} is not a valid HTTP response code`);
         }
+        if(!this.modifiedSchemas.includes(schema.id)){
+            schema = schemas["all"]
+        }
+        return schema
     }
-    serializeResponse(data: any, response: WebResponse) {
+    serializeResponse(data: any, response: Response) {
         const schema = this.getSchemaForStatus(response.statusCode);
         
         let mimeType = inferMimeType(data, schema);
-        
-        // Special case for strings when the mime type is text/plain, or unset
-        if (typeof data === 'string' && ((response.headers['content-type'] as String) || ''.startsWith('text/plain') || !response.headers['content-type'])) {
-            let validator = schema.cache.get('validator');
-            if (!validator) {
-                // Hot-build validator, only happens once
-                validator = this.context[kSchemaProvider].buildValidator(schema);
-            }
-            if(validator(data)){
-                return [data, mimeType];
-            }
-            else{
-                throw new Error("Bad")
-            }
-
-        }
 
         const serializer = schema.cache.get('serializer');
+        let serialized:string;
+        if(typeof data === "string" && (schema.type === "string" || schema.type === "any") && (!response.headers["content-type"] || (<string>response.headers["content-type"]).startsWith("text/plain"))){
+            serialized = data
+        }
+        else{
+            serialized = serializer(data);
+
+        }
         
-        const serialized = serializer(data);
+        if(serialized === null){
+            const info = serializer.error
+            const error:any = new Error(`${info.context} > ${info.reason}`)
+            error.statusCode = 500
+            // console.log(`THrows ${error}`);
+            
+            throw error
+        }
+                
+        
+        
         return [serialized, mimeType];
+    }
+
+
+
+    async executeRequestInterceptors(req:Request, res:Response){
+        // Sequentially execute all request interceptors
+        // Interceptors have the role of mutating data at certain stages
+        return new Promise( async (resolve, reject) => {
+            const interceptors = this.context[kInterceptors].request
+            let currentInterceptorIndex = -1;
+
+            const callback = () => {
+                currentInterceptorIndex++
+                if(currentInterceptorIndex>=interceptors.length){
+                    resolve(true)
+                }
+                else{                    
+                    interceptors[currentInterceptorIndex](req, res, callback)
+                    
+                }
+            }
+            callback()
+            
+        } )
+    }
+    async executeIncomingRequestInterceptors(req:Request, res: Response, body:string){
+        return body
     }
 }

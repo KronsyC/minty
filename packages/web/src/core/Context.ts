@@ -1,12 +1,11 @@
-import Router from '@mintyjs/router';
-import { RouteCallback } from '../lib/types';
 import Handler, { HandlerSchemas } from './Handler';
-import { Method } from '@mintyjs/http';
-import SchemaProvider from './SchemaProvider';
-import { PluginCallback, PluginOptions, UrlParameters, Querystring } from './types';
-import fmtUrl from '@mintyjs/fmturl';
-import ContextHookManager, { OnPluginLoadListener, OnRouteRegisterListener, RegisterContextHookMethod, RouteMetadata } from './ContextHookManager';
-import Nestable, { Inherited, FromRoot } from 'inside-in';
+
+import { PluginCallback, PluginOptions, UrlParameters, Querystring, RouteCallback, Method } from './types';
+import Nestable, { FromRoot, Inherited } from 'inside-in';
+import Request from './io/Request';
+import Response from './io/Response';
+import Schematica from 'schematica';
+import * as defaults from './defaults';
 interface RouteOptions {
     schemas?: HandlerSchemas;
 }
@@ -15,71 +14,114 @@ interface CreateRouteParams<BodyType, ParamsType, QueryType> {
     path: string;
     handler: RouteCallback<BodyType, ParamsType, QueryType>;
     schemas?: HandlerSchemas;
+    addToRouter?: boolean;
 }
 
-/**
- *
- * @param context The Current context
- *
- * Searches up the context tree until a context without a parent is found
- */
+interface ContextInterceptors {
+    request: InterceptableRequestCallback[];
+    response: InterceptableResponseCallback[];
+    incoming: InterceptableIncomingCallback[];
+}
 
-const kPrefix = Symbol('Context Route Prefix');
-export const kRouter = Symbol('Router');
+type InterceptableRequestCallback = (req: Request, res: Response, done: Function) => void;
+type InterceptableResponseCallback = (req: Request, res: Response, body: any, done: Function) => void;
+type InterceptableIncomingCallback = (req: Request, res: Response, rawBody: string, done: Function) => void;
 
-export const kSchemaProvider = Symbol('Schema Provider');
-export const kErrorSerializer = Symbol('Error Serializer');
-const kContextHookManager = Symbol('Context Hook Manager');
-const kHandlerStore = Symbol('Route Store');
-const kInitializers = Symbol('Initializer Function');
-
-export const kOnPluginLoadHandlers = Symbol('On Plugin Load Handlers');
-export const kOnRouteRegisterHandlers = Symbol('On Route Register Handlers');
-
+type ErrorHandlerFn = (req: Request, res: Response, error: any, context: Context) => void;
+type NotFoundHandlerFn = (req: Request, res: Response) => void;
 interface ContextOptions {
     parent?: Context;
     prefix?: string;
 }
+const kHandlerStore = Symbol('Route Store');
+const kInitializers = Symbol('Initializer Function');
+export const kPrefix = Symbol('Context Route Prefix');
+export const kRouter = Symbol('Router');
+export const kOnPluginLoadHandlers = Symbol('On Plugin Load Handlers');
+export const kOnRouteRegisterHandlers = Symbol('On Route Register Handlers');
+export const kInterceptors = Symbol('Interceptors');
+const kErrorHandler = Symbol('Error Handler');
+export const kNotFoundHandler = Symbol('Not Found Handler');
 export default class Context extends Nestable {
     @FromRoot() // Try To load from root before instantiating a new router
     private [kRouter]: Router<Handler>;
-    private [kSchemaProvider]: SchemaProvider;
-    private [kErrorSerializer]: Function;
+
+    @Inherited(true, true)
+    private [kInterceptors]: ContextInterceptors = {
+        request: [],
+        response: [],
+        incoming: [],
+    };
+
+    @FromRoot()
+    public schematicaInstance;
+
     private [kPrefix]: string;
     private [kInitializers]: Function[] = [];
     private [kHandlerStore]: Handler<any, any, any>[] = [];
-    private [kContextHookManager]: ContextHookManager;
-    private [kOnPluginLoadHandlers]: OnPluginLoadListener[] = [];
-    private [kOnRouteRegisterHandlers]: OnRouteRegisterListener[] = [];
+
+    private [kErrorHandler]: ErrorHandlerFn;
+    @DefaultToParent()
+    private [kNotFoundHandler]: Handler;
     constructor(options: ContextOptions = {}) {
         super();
         options.parent?.addChild(this);
-        this[kOnRouteRegisterHandlers] = [...(options.parent?.[kOnRouteRegisterHandlers] ?? [])];
         this[kPrefix] = fmtUrl(options.prefix ?? this.getParent()?.[kPrefix] ?? '/', true);
-        this[kContextHookManager] = new ContextHookManager({ context: this });
         this[kRouter] = new Router({});
-        this[kSchemaProvider] = new SchemaProvider();
-        const schema = this[kSchemaProvider].createSchema({
-            type: 'object',
-            required: ['statusCode', 'error'],
-            properties: {
-                statusCode: {
-                    type: 'number',
-                    min: 100,
-                    max: 599,
-                },
-                error: 'string',
-                message: 'string',
-            },
-            strict: true,
-        });
-        this[kErrorSerializer] = this[kSchemaProvider].buildSerializer(schema);
+        this.schematicaInstance = new Schematica();
+
+        // Defaults
+        this[kErrorHandler] = defaults.errorHandler;
+
+        
+    }
+    setNotFoundHandler(options: RouteOptions, callback: RouteCallback): void;
+    setNotFoundHandler(callback: RouteCallback): void;
+    setNotFoundHandler(arg1: RouteOptions | RouteCallback, arg2?: RouteCallback): void {
+        let handler;
+        if (typeof arg1 === 'function') {
+            handler = this.addRoute({
+                method: 'ALL',
+                path: '404',
+                handler: arg1,
+                schemas: {},
+                addToRouter: false,
+            });
+        } else {
+            handler = this.addRoute({
+                method: 'ALL',
+                path: '404',
+                //@ts-expect-error
+                handler: arg2,
+                schemas: arg1.schemas,
+                addToRouter: false,
+            });
+        }
+        this[kNotFoundHandler] = handler;
     }
 
-    public on: RegisterContextHookMethod = (event, listener) => {
-        //@ts-expect-error
-        this[kContextHookManager].register(event, listener);
-    };
+    sendError(req: Request, res: Response, error: any) {
+        this[kErrorHandler](req, res, error, this);
+    }
+
+    intercept(event: 'request', callback: InterceptableRequestCallback): void;
+    intercept(event: 'response', callback: InterceptableResponseCallback): void;
+    intercept(event: 'incoming', callback: InterceptableIncomingCallback): void;
+    intercept(event: 'request' | 'response' | 'incoming', callback: any) {
+        switch (event) {
+            case 'request':
+                this[kInterceptors].request.push(callback);
+                break;
+            case 'response':
+                this[kInterceptors].response.push(callback);
+                break;
+            case 'incoming':
+                this[kInterceptors].incoming.push(callback);
+                break;
+            default:
+                throw new Error(`No Interceptable Event ${event}`);
+        }
+    }
 
     /**
      * Builds the Context, its routes, and it's children
@@ -109,6 +151,7 @@ export default class Context extends Nestable {
     protected buildHandlers() {
         this[kHandlerStore].forEach((handler) => {
             handler.build();
+            if (!handler.addToRouter) return;
             this[kRouter].addRoute(handler.path, handler.method, handler);
         });
     }
@@ -122,34 +165,16 @@ export default class Context extends Nestable {
         } else {
             route = this[kPrefix] + '/' + fmtUrl(params.path, true);
         }
-        const metadata: RouteMetadata = {
+        const handler = new Handler({
+            listener: params.handler,
+            context: this,
+            schemas: params.schemas || {},
             path: route,
             method: params.method,
-            schemas: params.schemas || {},
-            context: this,
-        };
-        const hooks = this[kOnRouteRegisterHandlers];
-        let currentIndex = 0;
-        const nextHandler = () => {
-            const next = hooks[currentIndex];
-            if (next) {
-                currentIndex++;
-                next(metadata, nextHandler);
-            } else {
-                return;
-            }
-        };
-        nextHandler();
-
-        this[kHandlerStore].push(
-            new Handler({
-                listener: params.handler,
-                context: this,
-                schemas: params.schemas || {},
-                path: route,
-                method: params.method,
-            })
-        );
+            addToRouter: params.addToRouter,
+        });
+        this[kHandlerStore].push(handler);
+        return handler;
     }
     public use<OptionsType extends PluginOptions>(plugin: PluginCallback<OptionsType>, options?: OptionsType): void {
         const opts = <OptionsType>(options || {});

@@ -1,5 +1,7 @@
 import Context from "./Context";
-
+import Request from "./io/Request";
+import Response from "./io/Response"
+import { Method as HTTPMethod } from "@mintyjs/http";
 /**
  * A Query is defined as an object which can contain other Querystrings, i.e user[id]=123 etc.
  */
@@ -23,3 +25,27 @@ export type PluginCallback<ConfigType extends PluginOptions = PluginOptions> = {
 
 export type ServerLifecycleStage = "loading" | "building" | "ready" | "online" | "closed"
     
+
+export type RouteCallback<BodyType = any, ParamsType=UrlParameters, QueryType=Querystring> = (
+    this: Context,
+    req: Request<BodyType, ParamsType, QueryType>,
+    res: Response
+) => Promise<any>;
+
+export type Serializer = (doc: any) => any;
+
+export type ListenMethod = {
+    ( port: number, host: string, backlog: number, callback: (host: string) => void): void;
+    (port: number, host: string, callback: (host: string) => void): void;
+    (port: number, backlog: number, callback: (host: string) => void): void;
+    (port: number, callback: (host: string) => void): void;
+    (port: number): void;
+    (address: string, backlog: number, callback: (host: string) => void): void;
+    (address: string, callback: (host: string) => void): void;
+    (address: string): void;
+};
+
+export interface PluginOptions {}
+
+
+export type Method = HTTPMethod | "ALL"
