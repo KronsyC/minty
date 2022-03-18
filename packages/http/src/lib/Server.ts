@@ -3,8 +3,8 @@ import { createServer as createHttp1Server } from 'http';
 import { createSecureServer as createSecureHttp2Server } from 'http2';
 import { createServer as createHttpsServer } from 'https';
 import listen from '../util/listenHelper';
-import Request from './Request';
-import Response from './Response';
+import HTTPRequest from './Request';
+import HTTPResponse from './Response';
 
 
 export default class Server {
@@ -60,8 +60,8 @@ export default class Server {
      * minty/http counterparts, and then pass them to the listener
      */
     private requestHandler(req: BaseRequest, res: BaseResponse) {
-        const request = new Request(req);
-        const response = new Response(res);
+        const request = new HTTPRequest(req);
+        const response = new HTTPResponse(res);
         if (this.listener) {
             try {
                 this.listener(request, response);

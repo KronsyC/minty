@@ -1,11 +1,12 @@
 import Handler, { HandlerSchemas } from './Handler';
-
 import { PluginCallback, PluginOptions, UrlParameters, Querystring, RouteCallback, Method } from './types';
-import Nestable, { FromRoot, Inherited } from 'inside-in';
+import Nestable, { FromRoot, Inherited, DefaultToParent } from 'inside-in';
+import Router, {formatUrl as fmtUrl} from "beetroute"
 import Request from './io/Request';
 import Response from './io/Response';
 import Schematica from 'schematica';
 import * as defaults from './defaults';
+import { kErrorHandler, kHandlerStore, kInitializers, kInterceptors, kNotFoundHandler, kPrefix, kRouter } from './symbols';
 interface RouteOptions {
     schemas?: HandlerSchemas;
 }
@@ -28,20 +29,11 @@ type InterceptableResponseCallback = (req: Request, res: Response, body: any, do
 type InterceptableIncomingCallback = (req: Request, res: Response, rawBody: string, done: Function) => void;
 
 type ErrorHandlerFn = (req: Request, res: Response, error: any, context: Context) => void;
-type NotFoundHandlerFn = (req: Request, res: Response) => void;
 interface ContextOptions {
     parent?: Context;
     prefix?: string;
 }
-const kHandlerStore = Symbol('Route Store');
-const kInitializers = Symbol('Initializer Function');
-export const kPrefix = Symbol('Context Route Prefix');
-export const kRouter = Symbol('Router');
-export const kOnPluginLoadHandlers = Symbol('On Plugin Load Handlers');
-export const kOnRouteRegisterHandlers = Symbol('On Route Register Handlers');
-export const kInterceptors = Symbol('Interceptors');
-const kErrorHandler = Symbol('Error Handler');
-export const kNotFoundHandler = Symbol('Not Found Handler');
+
 export default class Context extends Nestable {
     @FromRoot() // Try To load from root before instantiating a new router
     private [kRouter]: Router<Handler>;
@@ -75,6 +67,8 @@ export default class Context extends Nestable {
 
         
     }
+
+
     setNotFoundHandler(options: RouteOptions, callback: RouteCallback): void;
     setNotFoundHandler(callback: RouteCallback): void;
     setNotFoundHandler(arg1: RouteOptions | RouteCallback, arg2?: RouteCallback): void {
@@ -149,10 +143,15 @@ export default class Context extends Nestable {
         });
     }
     protected buildHandlers() {
+        
         this[kHandlerStore].forEach((handler) => {
+            
             handler.build();
+            
             if (!handler.addToRouter) return;
+            
             this[kRouter].addRoute(handler.path, handler.method, handler);
+            
         });
     }
     protected registerHooks() {}

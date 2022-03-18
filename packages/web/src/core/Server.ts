@@ -1,15 +1,14 @@
-import fmtUrl from '@mintyjs/fmturl';
-import { ListenMethod, ServerLifecycleStage } from './types';
-import Context, { kNotFoundHandler, kPrefix, kRouter } from './Context';
 import HttpServer, { Request as HTTPRequest, Response as HTTPResponse } from '@mintyjs/http';
-import Request, { kParams, kQuery } from './io/Request';
+import Request from './io/Request';
 import Response, { kCreateSendCallback } from './io/Response';
 import NotFound from './errors/NotFound';
 import path from 'path';
-import formatUrl from '@mintyjs/fmturl';
+import { formatUrl } from "beetroute"
 import { parseQuery } from '../util/queryParser';
 import * as defaults from "./defaults"
-export const kBaseServer = Symbol('Base Server');
+import { ListenMethod, ServerLifecycleStage } from './types';
+import { kBaseServer, kNotFoundHandler, kParams, kPrefix, kQuery, kRouter, kServerState } from './symbols';
+import Context from './Context';
 
 interface ServeStaticDirectoryOptions {
     prefix?: string;
@@ -31,7 +30,6 @@ interface ServerOptions {
     poweredByHeader?: boolean;
     prefix?: string;
 }
-const kServerState = Symbol('Server lifecycle stage');
 interface WildcardParams {
     '*': string;
 }
@@ -114,7 +112,7 @@ export default class Server extends Context {
           const contextPaths = contexts.map(c=>c[kPrefix])
           const contextPathMatchWeights = contextPaths.map(p=>0)
           const contextPathBlacklist = contextPaths.map(p=>false)
-          const path = fmtUrl(req.url, true)
+          const path = formatUrl(req.url, true)
           
           // Find the index of the path that best matches the 404 path
           const segments = path.split("/")
@@ -145,7 +143,6 @@ export default class Server extends Context {
           
           switch(err.name){
             case "ERR_NOT_FOUND":
-                console.log(highest[kPrefix]);
                 
                 await highest[kNotFoundHandler].handle(request, response)
                 break;

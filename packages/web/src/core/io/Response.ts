@@ -1,8 +1,15 @@
+import fs from 'node:fs';
+import mimeTypes from "mime-types"
 import { Response as HTTPResponse } from '@mintyjs/http';
 import Request from './Request';
 import Handler from '../Handler';
+import Context from '../Context';
+import NotFound from '../errors/NotFound';
 
 export const kCreateSendCallback = Symbol('Create Send Callback Method');
+export const kCreateRedirectCallback = Symbol('Create Redirect Callback');
+export const kCreateSendFileCallback = Symbol('Create Send File Callback');
+
 const kSendCallback = Symbol('Send Callback');
 const kSendFileCallback = Symbol('Send File Callback');
 const kRedirectCallback = Symbol('Redirect Callback');
@@ -17,14 +24,14 @@ export default class WebResponse {
         this.rawResponse = res;
     }
     [kCreateSendCallback](handler: Handler, req: Request) {
-        let sendAttempts=0;
+        let sendAttempts = 0;
         const context = handler['context'];
         this[kSendCallback] = (data: any) => {
-            if(sendAttempts>10){
+            if (sendAttempts > 10) {
                 // Poorly WritteError Handling can lead to infinite call stack, this is protection
-                this.status(500)
-                this.rawResponse.end("Server was unable to fulfil the request")
-                return
+                this.status(500);
+                this.rawResponse.end('Server was unable to fulfil the request');
+                return;
             }
 
             try {
@@ -37,10 +44,39 @@ export default class WebResponse {
                 this.rawResponse.end(serialized);
                 this.hasSent = true;
             } catch (err) {
-                sendAttempts++
+                sendAttempts++;
                 context.sendError(req, this, err);
             }
         };
+    }
+    [kCreateRedirectCallback](handler: Handler, req: Request) {
+        this[kRedirectCallback] = (url: string) => {
+            if (!this.hasSetStatusCode) {
+                this.status(307);
+            }
+            this.set('location', url);
+            this.rawResponse.end(`Redirect to ${url}`);
+        };
+    }
+    [kCreateSendFileCallback](handler:Handler, req:Request) {
+        this[kSendFileCallback] = (location:string) => {
+            const context = handler["context"]
+            fs.readFile(location, (err, data) => {
+                if (err){
+                    context.sendError(req, this, new NotFound(`File ${req.path} not found`))
+                    return
+                };
+                const mimeType = mimeTypes.contentType(location);
+
+                if (mimeType) {
+                    this.set('content-type', mimeType);
+                    this.set('content-length', data.buffer.byteLength);
+                    this.rawResponse.end(data);
+                } else {
+                    context.sendError(req, this, new Error(`Could not get valid mime type for ${location}`))
+                }
+            });
+        }
     }
     get headers() {
         return this.rawResponse.getHeaders();

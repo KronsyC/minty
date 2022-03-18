@@ -69,7 +69,7 @@ app.static(path.join(__dirname, "static"), {
 })
 
 app.get("/", async(req, res) => {
-    return req.headers
+    res.redirect("discord")
 })
 app.post("/", async(req, res) => {
     return req.headers

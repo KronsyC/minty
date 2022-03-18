@@ -22,7 +22,7 @@ function GLFn(event: 'resume', callback: () => void): void;
 function GLFn(event: RequestEvent, callback: (arg1?: any, arg2?: any) => void): void{}
 type GenericListenerFunction = typeof GLFn;
 
-export default class Request {
+export default class HTTPRequest {
     public rawRequest: BaseRequest;
     constructor(req: BaseRequest) {
         this.rawRequest = req;

@@ -14,13 +14,12 @@
         "skipLibCheck": true,
         "skipDefaultLibCheck": true,
         "esModuleInterop": true,
-        "baseUrl": ".",
+        "baseUrl": "..",
         "strictPropertyInitialization": true,
         "paths": {
-            "@mintyjs/fmturl": ["packages/fmturl/src/index.ts"],
             "@mintyjs/http": ["packages/http/src/index.ts"],
-            "@mintyjs/router": ["packages/router/src/index.ts"],
-            "@mintyjs/web": ["packages/web/src/index.ts"]
+            "@mintyjs/web": ["packages/web/src/index.ts"],
+            "beetroute": ["../beetroute/"]
         },
         "types": ["node"]
     },

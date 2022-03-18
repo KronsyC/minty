@@ -1,6 +1,6 @@
 import { UrlParameters, Querystring, RouteCallback } from './types';
 import { Method as HTTPMethod, Request as HttpRequest, Response as HttpResponse } from '@mintyjs/http';
-import Context, { kInterceptors } from './Context';
+import Context from './Context';
 import mimeTypes from 'mime-types';
 import { GenericSchemaTemplate, Presets } from 'schematica';
 import fs from 'node:fs';
@@ -8,8 +8,9 @@ import { GenericSchema as Schema, ObjectSchema, ObjectSchemaTemplate, GenericSch
 import inferMimeType from '../util/inferMimeType';
 import ERR_INVALID_BODY from './errors/misc/ERR_INVALID_BODY';
 import NotFound from './errors/NotFound';
-import Request, { kParams } from './io/Request';
-import Response, { kCreateSendCallback } from "./io/Response"
+import Request from './io/Request';
+import Response, { kCreateRedirectCallback, kCreateSendCallback, kCreateSendFileCallback } from "./io/Response"
+import { kInterceptors, kParams, kPrefix } from './symbols';
 
 
 type Method = HTTPMethod | "ALL"
@@ -112,13 +113,18 @@ export default class Handler<BodyType = any, ParamsType extends {} = UrlParamete
     public build() {
         
         this.buildSchemas();
+        
         this.buildResponseSerializers();
+        
         this.buildParamsNormalizer()
+        
         this.buildBodyParser();
+        
     }
 
     private buildSchemas() {
         const json = this.context.schematicaInstance;
+        
         const create = (template:any):any => {
             this.modifiedSchemas.push(template.id)
             return json.createSchema(template)
@@ -160,6 +166,7 @@ export default class Handler<BodyType = any, ParamsType extends {} = UrlParamete
         this.schemas.params.cache.set("validator", validator)
     }
     private buildBodyParser() {
+        //TODO: Move this functionality into schematica
         const schema = this.schemas.body;
 
         let parser: Function;
@@ -268,36 +275,12 @@ export default class Handler<BodyType = any, ParamsType extends {} = UrlParamete
                 req[kParams] = urlParameters
 
                 const context = this.context
-                //#region callbacks
-                const sendFileCallback = (location: string) => {
-                    fs.readFile(location, (err, data) => {
-                        if (err){
-                            context.sendError(req, res, new NotFound(`File ${req.path} not found`))
-                            return
-                        };
-                        const mimeType = mimeTypes.contentType(location);
-
-                        if (mimeType) {
-                            res.set('content-type', mimeType);
-                            res.set('content-length', data.buffer.byteLength);
-                            res.rawResponse.end(data);
-                        } else {
-                            context.sendError(req, res,new Error(`Could not get valid mime type for ${location}`))
-                        }
-                    });
-                };
-                const redirectCallback = (url:string) => {
-                    // Redirect to an external location
-                    if(!res["hasSetStatusCode"]){
-                        res.status(307)
-                    }
-                    res.set("location", url)
-                    res.rawResponse.end(`Redirect to ${url}`)
-                }
-                //#endregion
-                
                 //@ts-expect-error
                 res[kCreateSendCallback](this, req);
+                //@ts-expect-error
+                res[kCreateRedirectCallback](this, req)
+                //@ts-expect-error
+                res[kCreateSendFileCallback](this, req)
                 
                 // res['sendFileCallback'] = sendFileCallback;
 
@@ -371,7 +354,6 @@ export default class Handler<BodyType = any, ParamsType extends {} = UrlParamete
             const info = serializer.error
             const error:any = new Error(`${info.context} > ${info.reason}`)
             error.statusCode = 500
-            // console.log(`THrows ${error}`);
             
             throw error
         }

@@ -1,7 +1,7 @@
 import { Readable } from "stream"
 import { BaseRequest, BaseResponse as BaseResponse, ResponseHeaders } from "../util/types"
 type ResponseEvent = "close" | "drain" | "error" | "pipe" | "finish" | "unpipe"
-export default class Response{
+export default class HTTPResponse{
     rawResponse : BaseResponse
     private sendResponse:(()=>void)|undefined=undefined
     constructor(res:BaseResponse) {

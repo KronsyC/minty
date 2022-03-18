@@ -15,8 +15,8 @@ import {
     Http2ServerResponse,
     ServerOptions as Http2ServerOptions
 } from 'http2';
-import Request from '../lib/Request';
-import Response from '../lib/Response';
+import HTTPRequest from '../lib/Request';
+import HTTPResponse from '../lib/Response';
 import { PxfObject, SecureContext, SecureVersion, TLSSocket } from 'tls';
 
 export type GenericServer = Http2Server | Http1Server | HttpsServer;
@@ -26,7 +26,7 @@ export type BaseResponse = Http1ServerResponse | Http2ServerResponse;
 export type RequestHeaders = IncomingHttpHeaders;
 export type ResponseHeaders = OutgoingHttpHeaders;
 
-export type Listener = (req: Request, res: Response) => void;
+export type Listener = (req: HTTPRequest, res: HTTPResponse) => void;
 
 export interface Http2Options extends Http2ServerOptions {}
 

@@ -1,7 +1,7 @@
 import Server from "./lib/Server"
-import Request from "./lib/Request"
-import Response from "./lib/Response"
+import HTTPRequest from "./lib/Request"
+import HTTPResponse from "./lib/Response"
 export * from "./util/types"
-export {Request, Response}
+export {HTTPRequest as Request, HTTPResponse as Response}
 export default Server
 

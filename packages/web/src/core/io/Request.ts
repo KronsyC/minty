@@ -1,4 +1,5 @@
 import { Request as HTTPRequest, RequestHeaders } from "@mintyjs/http";
+import { kBody, kParams, kQuery } from "../symbols";
 import { Querystring, UrlParameters } from "../types";
 
 
@@ -16,9 +17,7 @@ class Headers{
         }
     }
 }
-export const kQuery = Symbol("Query")
-export const kParams = Symbol("Params")
-export const kBody = Symbol("Body")
+
 export default class Request<BodyType=any, ParamsType=UrlParameters, QueryType=Querystring>{
     readonly rawRequest:HTTPRequest;
     private [kQuery]: QueryType;

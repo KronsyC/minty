@@ -29,18 +29,13 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.10.tgz#616f16e9d3a2a3d618136b1be244315d95bd7cab"
   integrity sha512-S/3xB4KzyFxYGCppyDt68yzBU9ysL88lSdIah4D6cptdcltc4NCPCAMc0+PCpg/lLIyC7IPvj2Z52OJWeIUkog==
 
-beetroute@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/beetroute/-/beetroute-1.0.0.tgz#0dd121dfa27a688ce1c612ad93a8646264d261f9"
-  integrity sha512-b/u0AeghX2AnRXRuAp+YcOWZOFshJv+gvryPbvqvOhd8u+IbFbH/FZccDYrE4a+dIrSfr90SIQ1E+YJS7vjgnQ==
+beetroute@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/beetroute/-/beetroute-1.0.2.tgz#394fe91fde6c9f836511b4b1c8cf61abf743f5d0"
+  integrity sha512-vNWNaJVfb+VGSXeRzWBiANdD4ZBIv6mWU7f85XpAZQfup6F3ecYvVlkzcAPoCo9hplDS0u+8M2FJ1rTfnYwlhQ==
   dependencies:
     "@mintyjs/http" "^1.1.5"
     memoizee "^0.4.15"
-
-clone@^2.1.2:
-  version "2.1.2"
-  resolved "https://registry.yarnpkg.com/clone/-/clone-2.1.2.tgz#1b7f4b9f591f1e8f83670401600345a02887435f"
-  integrity sha1-G39Ln1kfHo+DZwQBYANFoCiHQ18=
 
 d@1, d@^1.0.1:
   version "1.0.1"
@@ -106,13 +101,12 @@ ext@^1.1.2:
   dependencies:
     type "^2.5.0"
 
-inside-in@^1.0.10:
-  version "1.0.10"
-  resolved "https://registry.yarnpkg.com/inside-in/-/inside-in-1.0.10.tgz#5bed7af332cea93c0c2c90f53f8ef69a5b77e91e"
-  integrity sha512-gWwp8DlgwcMuiyTyEy8lgmaUhwDwEfIhAl2PZi/BzInkvFltZhUMGU5Y0+DNuz/wH8Xci1x3Z/1EmZkM9+eUBQ==
+inside-in@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/inside-in/-/inside-in-1.1.1.tgz#ad403ea27a7267bd2e075fe39e40a3a111c793aa"
+  integrity sha512-TDs4NqiS/qeffzAAk4UnU+/rqaulocnPSa9gPKn+VEIJjtcFK/WT1rm81NEsf+msum1CmEVfiJ1gTOO2BNuTzw==
   dependencies:
     "@types/clone" "^2.1.1"
-    clone "^2.1.2"
     deepmerge "^4.2.2"
 
 is-promise@^2.2.2:
