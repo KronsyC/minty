@@ -274,7 +274,6 @@ export default class Handler<BodyType = any, ParamsType extends {} = UrlParamete
             await this.executeRequestInterceptors(req, res);
 
             const routeHandler = this.listener.bind(this.context);
-
             routeHandler(req as any, res)
                 .then((data) => {
                     if (data) {

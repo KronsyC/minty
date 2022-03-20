@@ -89,6 +89,7 @@ export default class Server extends Context {
         return this[kServerState];
     }
     private async handleRequest(req: HTTPRequest, res: HTTPResponse) {
+        
         const query = parseQuery(req.url.split('?').slice(1).join('?'));
         // Request and response are partially initialized within the handler
         const request = new Request(req);
@@ -102,6 +103,7 @@ export default class Server extends Context {
             // Do a router lookup
             const { handler, params } = this[kRouter].find(req.url, req.method);
             request[kParams] = params;
+            console.log("HEY");
             
             const messageHandler = new MessageHandler(request, response, handler)
 

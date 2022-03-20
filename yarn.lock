@@ -1134,10 +1134,10 @@ balanced-match@^1.0.0:
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.2.tgz#e83e3a7e3f300b34cb9d87f615fa0cbf357690ee"
   integrity sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==
 
-beetroute@^1.0.3:
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/beetroute/-/beetroute-1.0.3.tgz#a8583723383d9d3d6ce33c31ce5a68ea1b759da1"
-  integrity sha512-c1K/vLQq+rChYDyjTIBwlhP5oTvcFm5L1k2WtJlfi8Y9JNM1J30v28DKd4/lNl0th+yhENlAxryHrKB50hdW2w==
+beetroute@^1.0.4:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/beetroute/-/beetroute-1.0.4.tgz#e2a6c1dd50240d65d8f065cec8e77679bb6b91b3"
+  integrity sha512-Hca/Ugq6oyj/MHXMfkEKlHytjhQSCO7F+X5h9iP2suWkn9hf3SbHUgnjEdKheVvrJGs1G1zEG28ZaCYPfA/DYA==
   dependencies:
     "@mintyjs/http" "^1.1.5"
     memoizee "^0.4.15"

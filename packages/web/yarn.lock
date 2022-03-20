@@ -29,10 +29,10 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.10.tgz#616f16e9d3a2a3d618136b1be244315d95bd7cab"
   integrity sha512-S/3xB4KzyFxYGCppyDt68yzBU9ysL88lSdIah4D6cptdcltc4NCPCAMc0+PCpg/lLIyC7IPvj2Z52OJWeIUkog==
 
-beetroute@^1.0.3:
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/beetroute/-/beetroute-1.0.3.tgz#a8583723383d9d3d6ce33c31ce5a68ea1b759da1"
-  integrity sha512-c1K/vLQq+rChYDyjTIBwlhP5oTvcFm5L1k2WtJlfi8Y9JNM1J30v28DKd4/lNl0th+yhENlAxryHrKB50hdW2w==
+beetroute@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/beetroute/-/beetroute-1.0.5.tgz#27c0735d43ad3c1dd1a197079c820eed517b2cc5"
+  integrity sha512-L1HOfnrXdgKmN0rzs8qYadrzExe8qEZ55zMhB+/LxdrnsYLk1ARSdYxnhUcxDyL0HpUSt1jiQ5VI210m3qng1g==
   dependencies:
     "@mintyjs/http" "^1.1.5"
     memoizee "^0.4.15"
