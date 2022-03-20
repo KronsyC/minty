@@ -19,7 +19,7 @@ interface CookieOptions {
     path?: string;
     secure?: boolean;
     httpOnly?: boolean;
-    sameSite?: "strict" | "lax" | "none";
+    sameSite?: 'strict' | 'lax' | 'none';
 }
 declare const kSendCallback: unique symbol;
 export default class WebResponse {
@@ -34,7 +34,8 @@ export default class WebResponse {
     get statusCode(): number;
     status(code: number): this;
     send(data: any): Promise<void>;
-    sendFile(location: string): Promise<void>;
+    sendFile(location: string): Promise<unknown>;
+    notFound(): void;
     redirect(url: string): Promise<void>;
     set(name: string, value: string | string[] | number): this;
     cookie(name: string, value: any, options?: CookieOptions): this;

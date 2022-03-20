@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 const node_fs_1 = (0, tslib_1.__importDefault)(require("node:fs"));
 const mime_types_1 = (0, tslib_1.__importDefault)(require("mime-types"));
-const NotFound_1 = (0, tslib_1.__importDefault)(require("../errors/NotFound"));
 const symbols_1 = require("../symbols");
 const kSendCallback = Symbol('Send Callback');
 class WebResponse {
@@ -67,14 +66,10 @@ class WebResponse {
         });
     }
     sendFile(location) {
-        return (0, tslib_1.__awaiter)(this, void 0, void 0, function* () {
-            // @ts-expect-error MessageHandler is injected, Typescript doesn't like this 
-            const messageHandler = this[symbols_1.kMessageHandler];
-            const context = messageHandler.context;
-            const req = messageHandler.request;
+        return new Promise((resolve, reject) => {
             node_fs_1.default.readFile(location, (err, data) => {
                 if (err) {
-                    context.sendError(req, this, new NotFound_1.default(`File ${req.path} not found`));
+                    reject(err);
                     return;
                 }
                 const mimeType = mime_types_1.default.contentType(location);
@@ -82,12 +77,19 @@ class WebResponse {
                     this.set('content-type', mimeType);
                     this.set('content-length', data.buffer.byteLength);
                     this.rawResponse.end(data);
+                    resolve(true);
                 }
                 else {
-                    context.sendError(req, this, new Error(`Could not get valid mime type for ${location}`));
+                    reject(new Error(`Could not get valid mime type for file ${location}`));
                 }
             });
         });
+    }
+    notFound() {
+        // Force a 404 response
+        //@ts-expect-error
+        const messageHandler = this[symbols_1.kMessageHandler];
+        messageHandler.context[symbols_1.kNotFoundHandler].handle(messageHandler);
     }
     redirect(url) {
         return (0, tslib_1.__awaiter)(this, void 0, void 0, function* () {
@@ -103,7 +105,7 @@ class WebResponse {
         return this;
     }
     cookie(name, value, options) {
-        let optionsString = "";
+        let optionsString = '';
         function add(propname, value) {
             if (value) {
                 optionsString += `${propname}=${value};`;
@@ -114,15 +116,15 @@ class WebResponse {
         }
         if (options) {
             if (options.domain)
-                add("Domain", options.domain);
+                add('Domain', options.domain);
             if (options.httpOnly)
-                add("HttpOnly");
+                add('HttpOnly');
             if (options.path)
-                add("Path", options.path);
+                add('Path', options.path);
             if (options.secure)
-                add("Secure");
+                add('Secure');
             if (options.sameSite)
-                add("SameSite", options.sameSite);
+                add('SameSite', options.sameSite);
             if (options.maxAge) {
                 // Override the expires value
                 // expires provides better backwards compatability than
@@ -134,18 +136,18 @@ class WebResponse {
             }
             if (options.expires) {
                 if (options.expires instanceof Date) {
-                    add("Expires", options.expires.toUTCString());
+                    add('Expires', options.expires.toUTCString());
                 }
                 else {
                     const epochTime = new Date();
                     const seconds = Math.floor(options.expires / 1000);
                     const milliseconds = options.expires % 1000;
                     epochTime.setUTCSeconds(seconds, milliseconds);
-                    add("Expires", epochTime.toUTCString());
+                    add('Expires', epochTime.toUTCString());
                 }
             }
         }
-        this.set("set-cookie", `${name}=${value};${optionsString}`);
+        this.set('set-cookie', `${name}=${value};${optionsString}`);
         return this;
     }
 }

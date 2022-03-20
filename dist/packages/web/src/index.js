@@ -14,5 +14,4 @@ exports.WebError = WebError_1.default;
 const getGenericStatusMessage_1 = (0, tslib_1.__importDefault)(require("./util/getGenericStatusMessage"));
 exports.getGenericErrorMessage = getGenericStatusMessage_1.default;
 exports.default = Server_1.default;
-// require("./testserver")
 //# sourceMappingURL=index.js.map

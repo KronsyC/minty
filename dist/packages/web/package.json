@@ -1,6 +1,6 @@
 {
   "name": "webmint",
-  "version": "1.0.6",
+  "version": "0.0.1",
   "type": "commonjs",
   "devDependencies": {
     "@types/memoizee": "^0.4.7",

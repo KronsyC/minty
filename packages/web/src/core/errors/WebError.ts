@@ -14,10 +14,12 @@ export default abstract class WebError extends Error{
     internal = false;
     statusCode:number;
     error:string;
+    //@ts-expect-error
+    message?:string
     constructor(status:number=400, message?:string){
         super()
         this.error = getGenericErrorMessage(status)
-        this.message = message ?? ""
+        this.message = message
         this.statusCode = status
     }
 }

@@ -3,9 +3,9 @@ import { Method as HTTPMethod } from '@mintyjs/http';
 import Context from './Context';
 import { GenericSchema as Schema, ObjectSchemaTemplate, GenericSchemaTemplate as SchemaTemplate } from 'schematica';
 import Request from './io/Request';
-import Response from "./io/Response";
+import Response from './io/Response';
 import MessageHandler from './io/MessageHandler';
-declare type Method = HTTPMethod | "ALL";
+declare type Method = HTTPMethod | 'ALL';
 export interface IHandlerParams<BT, PT, QT> {
     listener: RouteCallback<BT, PT, QT>;
     context: Context;
@@ -19,7 +19,7 @@ export interface HandlerSchemas {
     query?: ObjectSchemaTemplate;
     params?: ObjectSchemaTemplate;
     response?: {
-        'all'?: SchemaTemplate;
+        all?: SchemaTemplate;
         '1xx'?: SchemaTemplate;
         '2xx'?: SchemaTemplate;
         '3xx'?: SchemaTemplate;
@@ -52,6 +52,7 @@ export default class Handler<BodyType = any, ParamsType extends {} = UrlParamete
     private buildParamsNormalizer;
     private buildBodyParser;
     private parseBody;
+    accumulateBody(req: Request<any, any, any>): Promise<string>;
     handle(messageHandler: MessageHandler): Promise<void>;
     getSchemaForStatus(code: number): Schema;
     serializeResponse(data: any, response: Response): string[];

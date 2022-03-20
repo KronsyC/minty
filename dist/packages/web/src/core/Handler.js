@@ -31,7 +31,7 @@ class Handler {
                 '3xx': schematica_1.Presets.any,
                 '4xx': schematica_1.Presets.any,
                 '5xx': schematica_1.Presets.any,
-                'all': schematica_1.Presets.any
+                all: schematica_1.Presets.any,
             },
         };
         defaultSchemas.body.nullable = true;
@@ -40,7 +40,7 @@ class Handler {
         defaultSchemas.response['3xx'].nullable = true;
         defaultSchemas.response['4xx'].nullable = true;
         defaultSchemas.response['5xx'].nullable = true;
-        defaultSchemas.response["all"].nullable = true;
+        defaultSchemas.response['all'].nullable = true;
         this.schemas = defaultSchemas;
     }
     /**
@@ -80,18 +80,18 @@ class Handler {
     buildResponseSerializers() {
         if (this.schemas.response) {
             for (const [name, schema] of Object.entries(this.schemas.response)) {
-                this.context.schematicaInstance.buildSerializer(schema, { onAdditionalProperty: "skip" });
+                this.context.schematicaInstance.buildSerializer(schema, { onAdditionalProperty: 'skip' });
             }
         }
     }
     buildParamsNormalizer() {
         const wildCardSchema = schematica_1.Presets.string;
         // Force Wildcards in the schema
-        this.schemas.params.properties.set("*", wildCardSchema);
+        this.schemas.params.properties.set('*', wildCardSchema);
         const normalizer = this.context.schematicaInstance.buildNormalizer(this.schemas.params);
         const validator = this.context.schematicaInstance.buildValidator(this.schemas.params);
-        this.schemas.params.cache.set("normalizer", normalizer);
-        this.schemas.params.cache.set("validator", validator);
+        this.schemas.params.cache.set('normalizer', normalizer);
+        this.schemas.params.cache.set('validator', validator);
     }
     buildBodyParser() {
         //TODO: Move this functionality into schematica
@@ -177,41 +177,49 @@ class Handler {
         const parser = this.schemas.body.cache.get('bodyParser');
         return parser(data);
     }
+    accumulateBody(req) {
+        return new Promise((res, rej) => {
+            let rawBody = '';
+            req.rawRequest.on('data', (c) => (rawBody += c));
+            req.rawRequest.on('end', () => {
+                res(rawBody);
+            });
+        });
+    }
     handle(messageHandler) {
+        var _a;
         return (0, tslib_1.__awaiter)(this, void 0, void 0, function* () {
             const req = messageHandler.request;
             const res = messageHandler.response;
-            // Accumulate the raw request body into a string        
-            let rawBody = '';
-            req.rawRequest.on('data', (chunk) => (rawBody += chunk));
-            req.rawRequest.on('end', () => (0, tslib_1.__awaiter)(this, void 0, void 0, function* () {
-                var _a;
-                try {
-                    // Parse the body
-                    const paramsNormalizer = this.schemas.params.cache.get("normalizer");
-                    let urlParameters = (_a = req.params) !== null && _a !== void 0 ? _a : {};
-                    urlParameters = paramsNormalizer(urlParameters);
-                    // Update the request parameters with their normalized form
-                    req[symbols_1.kParams] = urlParameters;
-                    const context = this.context;
-                    res[symbols_1.kCreateSendCallback](this, req);
-                    // Execute all of the context request interceptors
-                    yield this.executeRequestInterceptors(req, res);
-                    const routeHandler = this.listener.bind(this.context);
-                    routeHandler(req, res)
-                        .then((data) => {
-                        if (data) {
-                            res.send(data);
-                        }
-                    })
-                        .catch(err => {
-                        context.sendError(req, res, err);
-                    });
-                }
-                catch (err) {
-                    this.context.sendError(req, res, err);
-                }
-            }));
+            if (req[symbols_1.kBody] === undefined) {
+                const body = yield this.accumulateBody(req);
+                req[symbols_1.kBody] = this.parseBody(body);
+            }
+            try {
+                // Parse the body
+                const paramsNormalizer = this.schemas.params.cache.get('normalizer');
+                let urlParameters = (_a = req.params) !== null && _a !== void 0 ? _a : {};
+                urlParameters = paramsNormalizer(urlParameters);
+                // Update the request parameters with their normalized form
+                req[symbols_1.kParams] = urlParameters;
+                const context = this.context;
+                res[symbols_1.kCreateSendCallback](this, req);
+                // Execute all of the context request interceptors
+                yield this.executeRequestInterceptors(req, res);
+                const routeHandler = this.listener.bind(this.context);
+                routeHandler(req, res)
+                    .then((data) => {
+                    if (data) {
+                        res.send(data);
+                    }
+                })
+                    .catch((err) => {
+                    context.sendError(req, res, err);
+                });
+            }
+            catch (err) {
+                this.context.sendError(req, res, err);
+            }
         });
     }
     getSchemaForStatus(code) {
@@ -219,26 +227,26 @@ class Handler {
         let schema;
         const firstdigit = code.toString()[0];
         switch (firstdigit) {
-            case "1":
+            case '1':
                 schema = schemas['1xx'];
                 break;
-            case "2":
+            case '2':
                 schema = schemas['2xx'];
                 break;
-            case "3":
+            case '3':
                 schema = schemas['3xx'];
                 break;
-            case "4":
+            case '4':
                 schema = schemas['4xx'];
                 break;
-            case "5":
+            case '5':
                 schema = schemas['5xx'];
                 break;
             default:
                 throw new Error(`Code ${code} is not a valid HTTP response code`);
         }
         if (!this.modifiedSchemas.includes(schema.id)) {
-            schema = schemas["all"];
+            schema = schemas['all'];
         }
         return schema;
     }
@@ -247,7 +255,9 @@ class Handler {
         let mimeType = (0, inferMimeType_1.default)(data, schema);
         const serializer = schema.cache.get('serializer');
         let serialized;
-        if (typeof data === "string" && (schema.type === "string" || schema.type === "any") && (!response.headers["content-type"] || response.headers["content-type"].startsWith("text/plain"))) {
+        if (typeof data === 'string' &&
+            (schema.type === 'string' || schema.type === 'any') &&
+            (!response.headers['content-type'] || response.headers['content-type'].startsWith('text/plain'))) {
             serialized = data;
         }
         else {
@@ -295,7 +305,7 @@ class Handler {
                     }
                     else {
                         const current = interceptors[currentInterceptorIndex];
-                        //@ts-expect-error          
+                        //@ts-expect-error
                         current(req, res, callback);
                     }
                 };

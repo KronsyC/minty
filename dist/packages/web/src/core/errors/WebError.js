@@ -14,7 +14,7 @@ class WebError extends Error {
         super();
         this.internal = false;
         this.error = (0, getGenericStatusMessage_1.default)(status);
-        this.message = message !== null && message !== void 0 ? message : "";
+        this.message = message;
         this.statusCode = status;
     }
 }

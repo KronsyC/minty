@@ -13,4 +13,3 @@ export {
     getGenericErrorMessage
 }
 
-// require("./testserver")

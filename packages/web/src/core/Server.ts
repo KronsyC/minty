@@ -167,6 +167,7 @@ export default class Server extends Context {
         // Check if the server is already prepared
         // If yes, start the server,
         // Else, prepare, then start
+        
         if (this.stage === 'loading') {
             this.build();
         }
@@ -181,7 +182,8 @@ export default class Server extends Context {
         const prefix = formatUrl(options.prefix || '', true);
         const defaultExtension = options.defaultExtension ?? ".html"
         const rootFile = options.rootFile ?? "index.html"
-        this.get<any, any>(`${prefix}/**`, async (req, res) => {
+        this.get<any, any>(`${prefix}/**`, async function(req, res){
+            
             let requestPath: string = formatUrl(req.params['*'] || '/', true);
             
             requestPath = requestPath.slice(prefix.length);
@@ -207,7 +209,14 @@ export default class Server extends Context {
                     }
                 }
 
-                res.sendFile(filePath);
+                res.sendFile(filePath)
+                .catch(err => {
+                    // Throw a 404
+                    
+                    res.notFound()
+                    
+                })
+                
             }
         });
     }

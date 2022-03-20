@@ -4,26 +4,26 @@ import { Response as HTTPResponse } from '@mintyjs/http';
 import Request from './Request';
 import Handler from '../Handler';
 import NotFound from '../errors/NotFound';
-import { kCreateSendCallback, kMessageHandler, kOutgoingDataCallback } from '../symbols';
+import { kCreateSendCallback, kMessageHandler, kNotFoundHandler, kOutgoingDataCallback } from '../symbols';
 import MessageHandler from './MessageHandler';
 
-interface CookieOptions{
+interface CookieOptions {
     /**
-     * A Date object representing the time of expiry   
-     * or   
+     * A Date object representing the time of expiry
+     * or
      * A unix timestamp *(ms)*
      */
-    expires?:Date|number;
+    expires?: Date | number;
     /**
      * A number representing the number of seconds in the future that
      * the cookie will expire
      */
-    maxAge?:number;
-    domain?:string;
-    path?:string;
-    secure?:boolean;
-    httpOnly?:boolean;
-    sameSite?:"strict"|"lax"|"none"
+    maxAge?: number;
+    domain?: string;
+    path?: string;
+    secure?: boolean;
+    httpOnly?: boolean;
+    sameSite?: 'strict' | 'lax' | 'none';
 }
 
 const kSendCallback = Symbol('Send Callback');
@@ -88,28 +88,34 @@ export default class WebResponse {
             throw new Error('No Send callback found, please open a github issue');
         }
     }
-    async sendFile(location: string) {
-        // @ts-expect-error MessageHandler is injected, Typescript doesn't like this 
-        const messageHandler:MessageHandler = this[kMessageHandler]
+    sendFile(location: string) {
+        return new Promise((resolve, reject) => {
 
-        const context = messageHandler.context
-        const req = messageHandler.request
-        
-        fs.readFile(location, (err, data) => {
-            if (err) {
-                context.sendError(req, this, new NotFound(`File ${req.path} not found`));
-                return;
-            }
-            const mimeType = mimeTypes.contentType(location);
 
-            if (mimeType) {
-                this.set('content-type', mimeType);
-                this.set('content-length', data.buffer.byteLength);
-                this.rawResponse.end(data);
-            } else {
-                context.sendError(req, this, new Error(`Could not get valid mime type for ${location}`));
-            }
+            fs.readFile(location, (err, data) => {
+                if (err) {
+                    reject(err)
+                    return;
+                }
+                const mimeType = mimeTypes.contentType(location);
+
+                if (mimeType) {
+                    this.set('content-type', mimeType);
+                    this.set('content-length', data.buffer.byteLength);
+                    this.rawResponse.end(data);
+                    resolve(true)
+                } else {
+                    reject(new Error(`Could not get valid mime type for file ${location}`))
+                }
+            });
         });
+    }
+    notFound(){
+        // Force a 404 response
+        //@ts-expect-error
+        const messageHandler:MessageHandler = this[kMessageHandler]
+        
+        messageHandler.context[kNotFoundHandler].handle(messageHandler)
     }
     async redirect(url: string) {
         if (!this.hasSetStatusCode) {
@@ -123,46 +129,44 @@ export default class WebResponse {
         return this;
     }
 
-    cookie(name:string, value:any, options?:CookieOptions){
-        let optionsString=""
-        function add(propname:string, value?:string){
-            if(value){
-                optionsString+=`${propname}=${value};`
-            }
-            else{
-                optionsString+=`${propname};`
+    cookie(name: string, value: any, options?: CookieOptions) {
+        let optionsString = '';
+        function add(propname: string, value?: string) {
+            if (value) {
+                optionsString += `${propname}=${value};`;
+            } else {
+                optionsString += `${propname};`;
             }
         }
-        if(options){
-            if(options.domain)add("Domain", options.domain)
-            if(options.httpOnly)add("HttpOnly")
-            if(options.path)add("Path", options.path)
-            if(options.secure)add("Secure")
-            if(options.sameSite)add("SameSite", options.sameSite)
-            if(options.maxAge){
+        if (options) {
+            if (options.domain) add('Domain', options.domain);
+            if (options.httpOnly) add('HttpOnly');
+            if (options.path) add('Path', options.path);
+            if (options.secure) add('Secure');
+            if (options.sameSite) add('SameSite', options.sameSite);
+            if (options.maxAge) {
                 // Override the expires value
                 // expires provides better backwards compatability than
                 // Max-Age
-                const now = new Date()
-                const expiry = new Date(0)
-                expiry.setUTCMilliseconds(now.getTime()+Math.round(options.maxAge*1000))
-                options.expires = expiry
+                const now = new Date();
+                const expiry = new Date(0);
+                expiry.setUTCMilliseconds(now.getTime() + Math.round(options.maxAge * 1000));
+                options.expires = expiry;
             }
-            if(options.expires){
-                if(options.expires instanceof Date){
-                    add("Expires", options.expires.toUTCString())
-                }
-                else{
-                    const epochTime = new Date()
-                    const seconds = Math.floor(options.expires / 1000)
-                    const milliseconds = options.expires % 1000
-                    epochTime.setUTCSeconds(seconds, milliseconds)
-                    add("Expires", epochTime.toUTCString())
+            if (options.expires) {
+                if (options.expires instanceof Date) {
+                    add('Expires', options.expires.toUTCString());
+                } else {
+                    const epochTime = new Date();
+                    const seconds = Math.floor(options.expires / 1000);
+                    const milliseconds = options.expires % 1000;
+                    epochTime.setUTCSeconds(seconds, milliseconds);
+                    add('Expires', epochTime.toUTCString());
                 }
             }
         }
-        this.set("set-cookie", `${name}=${value};${optionsString}`)
-        
-        return this
+        this.set('set-cookie', `${name}=${value};${optionsString}`);
+
+        return this;
     }
 }

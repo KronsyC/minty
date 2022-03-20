@@ -145,31 +145,37 @@ class Server extends Context_1.default {
         const prefix = (0, beetroute_1.formatUrl)(options.prefix || '', true);
         const defaultExtension = (_b = options.defaultExtension) !== null && _b !== void 0 ? _b : ".html";
         const rootFile = (_c = options.rootFile) !== null && _c !== void 0 ? _c : "index.html";
-        this.get(`${prefix}/**`, (req, res) => (0, tslib_1.__awaiter)(this, void 0, void 0, function* () {
-            let requestPath = (0, beetroute_1.formatUrl)(req.params['*'] || '/', true);
-            requestPath = requestPath.slice(prefix.length);
-            if (!requestPath)
-                requestPath = rootFile;
-            const segments = requestPath.split('/');
-            // Default extension is .html
-            const lastSegment = segments[segments.length - 1];
-            if (!lastSegment.includes('.')) {
-                segments[segments.length - 1] += defaultExtension;
-            }
-            const filePath = path_1.default.join(location, ...segments);
-            if (!filePath.startsWith(location)) {
-                throw new NotFound_1.default();
-            }
-            else {
-                // Default Headers
-                if (options.defaultHeaders) {
-                    for (let header in options.defaultHeaders) {
-                        res.set(header, options.defaultHeaders[header]);
-                    }
+        this.get(`${prefix}/**`, function (req, res) {
+            return (0, tslib_1.__awaiter)(this, void 0, void 0, function* () {
+                let requestPath = (0, beetroute_1.formatUrl)(req.params['*'] || '/', true);
+                requestPath = requestPath.slice(prefix.length);
+                if (!requestPath)
+                    requestPath = rootFile;
+                const segments = requestPath.split('/');
+                // Default extension is .html
+                const lastSegment = segments[segments.length - 1];
+                if (!lastSegment.includes('.')) {
+                    segments[segments.length - 1] += defaultExtension;
                 }
-                res.sendFile(filePath);
-            }
-        }));
+                const filePath = path_1.default.join(location, ...segments);
+                if (!filePath.startsWith(location)) {
+                    throw new NotFound_1.default();
+                }
+                else {
+                    // Default Headers
+                    if (options.defaultHeaders) {
+                        for (let header in options.defaultHeaders) {
+                            res.set(header, options.defaultHeaders[header]);
+                        }
+                    }
+                    res.sendFile(filePath)
+                        .catch(err => {
+                        // Throw a 404
+                        res.notFound();
+                    });
+                }
+            });
+        });
     }
 }
 exports.default = Server;
