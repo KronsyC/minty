@@ -85,6 +85,7 @@ class Server extends Context_1.default {
                 // Do a router lookup
                 const { handler, params } = this[symbols_1.kRouter].find(req.url, req.method);
                 request[symbols_1.kParams] = params;
+                console.log("HEY");
                 const messageHandler = new MessageHandler_1.default(request, response, handler);
                 yield handler.handle(messageHandler);
             }
