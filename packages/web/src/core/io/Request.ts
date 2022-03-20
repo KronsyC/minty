@@ -1,4 +1,5 @@
 import { Request as HTTPRequest, RequestHeaders } from "@mintyjs/http";
+import Context from "../Context";
 import { kBody, kParams, kQuery } from "../symbols";
 import { Querystring, UrlParameters } from "../types";
 

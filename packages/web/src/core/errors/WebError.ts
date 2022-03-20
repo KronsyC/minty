@@ -7,6 +7,9 @@ import getGenericErrorMessage from "../../util/getGenericStatusMessage";
 
 
 
+/**
+ * The WebError Class is inherited by any errors that should be exposed to the user
+ */
 export default abstract class WebError extends Error{
     internal = false;
     statusCode:number;

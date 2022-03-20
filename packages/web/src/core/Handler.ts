@@ -1,16 +1,14 @@
 import { UrlParameters, Querystring, RouteCallback } from './types';
 import { Method as HTTPMethod, Request as HttpRequest, Response as HttpResponse } from '@mintyjs/http';
 import Context from './Context';
-import mimeTypes from 'mime-types';
-import { GenericSchemaTemplate, Presets } from 'schematica';
-import fs from 'node:fs';
+import {  Presets } from 'schematica';
 import { GenericSchema as Schema, ObjectSchema, ObjectSchemaTemplate, GenericSchemaTemplate as SchemaTemplate } from 'schematica';
 import inferMimeType from '../util/inferMimeType';
 import ERR_INVALID_BODY from './errors/misc/ERR_INVALID_BODY';
-import NotFound from './errors/NotFound';
 import Request from './io/Request';
-import Response, { kCreateRedirectCallback, kCreateSendCallback, kCreateSendFileCallback } from "./io/Response"
-import { kInterceptors, kParams, kPrefix } from './symbols';
+import Response from "./io/Response"
+import {  kCreateSendCallback, kCreateSendFileCallback, kInterceptors, kParams } from './symbols';
+import MessageHandler from './io/MessageHandler';
 
 
 type Method = HTTPMethod | "ALL"
@@ -160,7 +158,9 @@ export default class Handler<BodyType = any, ParamsType extends {} = UrlParamete
         const wildCardSchema = Presets.string
         // Force Wildcards in the schema
         this.schemas.params.properties.set("*", wildCardSchema)
+        
         const normalizer = this.context.schematicaInstance.buildNormalizer(this.schemas.params)
+        
         const validator = this.context.schematicaInstance.buildValidator(this.schemas.params)
         this.schemas.params.cache.set("normalizer", normalizer)
         this.schemas.params.cache.set("validator", validator)
@@ -254,8 +254,11 @@ export default class Handler<BodyType = any, ParamsType extends {} = UrlParamete
         return parser(data);
     }
 
-    async handle(req:Request<BodyType, ParamsType, QueryType>, res: Response) {
-        
+    async handle(messageHandler:MessageHandler) {
+        const req = messageHandler.request
+        const res = messageHandler.response
+
+
         // Accumulate the raw request body into a string        
         let rawBody = '';
         req.rawRequest.on('data', (chunk) => (rawBody += chunk));
@@ -266,8 +269,9 @@ export default class Handler<BodyType = any, ParamsType extends {} = UrlParamete
                 const paramsNormalizer = this.schemas.params.cache.get("normalizer")
                 
                 let urlParameters = req.params??{};
+                
                 urlParameters = paramsNormalizer(urlParameters)
-
+                
                 
                 
                 
@@ -275,20 +279,15 @@ export default class Handler<BodyType = any, ParamsType extends {} = UrlParamete
                 req[kParams] = urlParameters
 
                 const context = this.context
-                //@ts-expect-error
-                res[kCreateSendCallback](this, req);
-                //@ts-expect-error
-                res[kCreateRedirectCallback](this, req)
-                //@ts-expect-error
-                res[kCreateSendFileCallback](this, req)
                 
-                // res['sendFileCallback'] = sendFileCallback;
+                res[kCreateSendCallback](this as any, req);
+                
 
                 // Execute all of the context request interceptors
                 await this.executeRequestInterceptors(req, res)
                 
                 const routeHandler = this.listener.bind(this.context);
-                routeHandler(req, res)
+                routeHandler(req as any, res)
                 .then((data) => {
                     if(data){
                         res.send(data)
@@ -386,7 +385,27 @@ export default class Handler<BodyType = any, ParamsType extends {} = UrlParamete
             
         } )
     }
-    async executeIncomingRequestInterceptors(req:Request, res: Response, body:string){
-        return body
+    async executeResponseInterceptors(req:Request, res:Response){
+        // Sequentially execute all response interceptors
+        // Interceptors have the role of mutating data at certain stages
+        return new Promise( async (resolve, reject) => {
+            const interceptors = this.context[kInterceptors].response
+            let currentInterceptorIndex = -1;
+
+            const callback = () => {
+                currentInterceptorIndex++
+                if(currentInterceptorIndex>=interceptors.length){
+                    resolve(true)
+                }
+                else{     
+                    const current = interceptors[currentInterceptorIndex]     
+                    //@ts-expect-error          
+                    current(req, res, callback)
+                    
+                }
+            }
+            callback()
+            
+        } )
     }
 }

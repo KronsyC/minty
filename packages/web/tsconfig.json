@@ -9,7 +9,7 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "rootDir": "../../",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
   },
   "files": [],
   "include": [],

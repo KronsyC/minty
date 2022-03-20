@@ -3,11 +3,11 @@ import Request from "../io/Request";
 import Response from "../io/Response"
 
 export async function notFoundHandler(req:Request, res:Response){
+    
     res.status(404)
-    res.send({
+    .send({
         statusCode: 404,
-        error: "Not Found",
-        mba: "2k22"
+        error: "Not Found"
     })
 }
 

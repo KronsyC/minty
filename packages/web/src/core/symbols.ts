@@ -12,3 +12,7 @@ export const kNotFoundHandler = Symbol('Not Found Handler');
 export const kQuery = Symbol("Query")
 export const kParams = Symbol("Params")
 export const kBody = Symbol("Body")
+export const kCreateSendCallback = Symbol('Create Send Callback Method');
+export const kCreateSendFileCallback = Symbol('Create Send File Callback');
+export const kOutgoingDataCallback = Symbol("Outgoing Data Callback")
+export const kMessageHandler = Symbol("Message Handler (Injected)")

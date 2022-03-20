@@ -101,10 +101,10 @@ ext@^1.1.2:
   dependencies:
     type "^2.5.0"
 
-inside-in@^1.1.1:
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/inside-in/-/inside-in-1.1.1.tgz#ad403ea27a7267bd2e075fe39e40a3a111c793aa"
-  integrity sha512-TDs4NqiS/qeffzAAk4UnU+/rqaulocnPSa9gPKn+VEIJjtcFK/WT1rm81NEsf+msum1CmEVfiJ1gTOO2BNuTzw==
+inside-in@^1.1.3:
+  version "1.1.3"
+  resolved "https://registry.yarnpkg.com/inside-in/-/inside-in-1.1.3.tgz#8db1bfdf9ac35584275511a607d06a4470233355"
+  integrity sha512-InkQGTG2Jel4YjZNXzCJs/Wj/6bF3QvPlHxzF37SowafsEJeNhjA4Nfgv6gTLXlenDWgYKmfqlbiXzM7rgpePQ==
   dependencies:
     "@types/clone" "^2.1.1"
     deepmerge "^4.2.2"
@@ -162,15 +162,10 @@ next-tick@~1.0.0:
   resolved "https://registry.yarnpkg.com/next-tick/-/next-tick-1.0.0.tgz#ca86d1fe8828169b0120208e3dc8424b9db8342c"
   integrity sha1-yobR/ogoFpsBICCOPchCS524NCw=
 
-print-tree@^0.1.5:
-  version "0.1.5"
-  resolved "https://registry.yarnpkg.com/print-tree/-/print-tree-0.1.5.tgz#32c9ea0fac5da68616fe042049b540a4c4b774ee"
-  integrity sha512-t5eFtuheMgWGR3kj1vtxsvfWrrecEEWow3IgEtbW0EPbYRufHAvB+ShK1DgRjWxEYYEqO4B6DNlkoPmh7E3LGQ==
-
-schematica@^1.1.14:
-  version "1.1.14"
-  resolved "https://registry.yarnpkg.com/schematica/-/schematica-1.1.14.tgz#8064a62c88f9049142d77a75b09f083aefe6b4b2"
-  integrity sha512-sp6SN1BeOgZmksmxLfA329YZIniu/rlZJyZZmdDh50rATLEu4kXz4WS7UHHHW3n+DOgz6SCft5ACNCSUIAyGuw==
+schematica@^1.1.15:
+  version "1.1.15"
+  resolved "https://registry.yarnpkg.com/schematica/-/schematica-1.1.15.tgz#3af69041f2ebcae5b20e160d5efa9ecf6edcb4b2"
+  integrity sha512-hRds1TMQcrc9AcMcO8j50i7WJeTN3vVg5TeaNP+2iDcun75a5RC/sYwbmZyckeGSvPSFrAtcWlTX/Gn/fc9AWA==
 
 timers-ext@^0.1.7:
   version "0.1.7"

@@ -1,6 +1,6 @@
 import HttpServer, { Request as HTTPRequest, Response as HTTPResponse } from '@mintyjs/http';
 import Request from './io/Request';
-import Response, { kCreateSendCallback } from './io/Response';
+import Response from './io/Response';
 import NotFound from './errors/NotFound';
 import path from 'path';
 import { formatUrl } from "beetroute"
@@ -9,6 +9,7 @@ import * as defaults from "./defaults"
 import { ListenMethod, ServerLifecycleStage } from './types';
 import { kBaseServer, kNotFoundHandler, kParams, kPrefix, kQuery, kRouter, kServerState } from './symbols';
 import Context from './Context';
+import MessageHandler from './io/MessageHandler';
 
 interface ServeStaticDirectoryOptions {
     prefix?: string;
@@ -92,20 +93,22 @@ export default class Server extends Context {
         const query = parseQuery(req.url.split('?').slice(1).join('?'));
         // Request and response are partially initialized within the handler
         const request = new Request(req);
-        const response = new Response(res, request);
-
-
+        const response = new Response(res);
         request[kQuery] = query;
-        try {
-            this.poweredByHeader ? res.setHeader('X-Powered-By', 'MintWeb') : null;
-            res.setHeader('X-Content-Type-Options', 'nosniff');
 
+
+
+        try {
+            
             // Do a router lookup
             const { handler, params } = this[kRouter].find(req.url, req.method);
             request[kParams] = params;
+            
+            const messageHandler = new MessageHandler(request, response, handler)
 
-            await handler.handle(request, response);
+            await handler.handle(messageHandler);
         } catch (err: any) {
+            
           //#region router error handler negotiation
           const contexts = this.deepGetChildren()
           contexts.unshift(this)
@@ -113,7 +116,6 @@ export default class Server extends Context {
           const contextPathMatchWeights = contextPaths.map(p=>0)
           const contextPathBlacklist = contextPaths.map(p=>false)
           const path = formatUrl(req.url, true)
-          
           // Find the index of the path that best matches the 404 path
           const segments = path.split("/")
 
@@ -127,6 +129,8 @@ export default class Server extends Context {
                 contextPathBlacklist[ctxIndex] = true
               }
             } )
+          //#endregion
+
           } )
 
           // Each context path now has a weight, chose the first path with the highest weight
@@ -143,8 +147,8 @@ export default class Server extends Context {
           
           switch(err.name){
             case "ERR_NOT_FOUND":
-                
-                await highest[kNotFoundHandler].handle(request, response)
+                const messageHandler = new MessageHandler(request, response, highest[kNotFoundHandler])
+                await highest[kNotFoundHandler].handle(messageHandler)
                 break;
           }          
         }
