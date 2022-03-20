@@ -1,4 +1,4 @@
-import { Method } from './types';
+import { Method } from "./types";
 interface RouterConfig {
     ignoreTrailingSlash?: boolean;
     parameterSeparators?: string[];

@@ -1,0 +1,22 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.kMessageHandler = exports.kOutgoingDataCallback = exports.kCreateSendFileCallback = exports.kCreateSendCallback = exports.kBody = exports.kParams = exports.kQuery = exports.kNotFoundHandler = exports.kErrorHandler = exports.kInterceptors = exports.kOnRouteRegisterHandlers = exports.kOnPluginLoadHandlers = exports.kRouter = exports.kPrefix = exports.kInitializers = exports.kHandlerStore = exports.kServerState = exports.kBaseServer = void 0;
+exports.kBaseServer = Symbol('Base Server');
+exports.kServerState = Symbol('Server lifecycle stage');
+exports.kHandlerStore = Symbol('Route Store');
+exports.kInitializers = Symbol('Initializer Function');
+exports.kPrefix = Symbol('Context Route Prefix');
+exports.kRouter = Symbol('Router');
+exports.kOnPluginLoadHandlers = Symbol('On Plugin Load Handlers');
+exports.kOnRouteRegisterHandlers = Symbol('On Route Register Handlers');
+exports.kInterceptors = Symbol('Interceptors');
+exports.kErrorHandler = Symbol('Error Handler');
+exports.kNotFoundHandler = Symbol('Not Found Handler');
+exports.kQuery = Symbol("Query");
+exports.kParams = Symbol("Params");
+exports.kBody = Symbol("Body");
+exports.kCreateSendCallback = Symbol('Create Send Callback Method');
+exports.kCreateSendFileCallback = Symbol('Create Send File Callback');
+exports.kOutgoingDataCallback = Symbol("Outgoing Data Callback");
+exports.kMessageHandler = Symbol("Message Handler (Injected)");
+//# sourceMappingURL=symbols.js.map

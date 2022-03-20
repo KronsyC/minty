@@ -15,6 +15,8 @@ interface ServeStaticDirectoryOptions {
     prefix?: string;
     index?: string;
     defaultHeaders?: { [x: string]: string };
+    defaultExtension?:string;
+    rootFile?:string;
 }
 
 declare module '@mintyjs/http' {
@@ -30,9 +32,6 @@ declare module '@mintyjs/http' {
 interface ServerOptions {
     poweredByHeader?: boolean;
     prefix?: string;
-}
-interface WildcardParams {
-    '*': string;
 }
 /**
  * Events Reference
@@ -179,13 +178,14 @@ export default class Server extends Context {
     };
 
     public static(location: string, options: ServeStaticDirectoryOptions = {}) {
-        const prefix = formatUrl(options.prefix || '', false);
-
-        this.get<any, WildcardParams>(`${prefix ? prefix + '/' : ''}**`, async (req, res) => {
+        const prefix = formatUrl(options.prefix || '', true);
+        const defaultExtension = options.defaultExtension ?? ".html"
+        const rootFile = options.rootFile ?? "index.html"
+        this.get<any, any>(`${prefix}/**`, async (req, res) => {
             let requestPath: string = formatUrl(req.params['*'] || '/', true);
-
+            
             requestPath = requestPath.slice(prefix.length);
-            if (!requestPath) requestPath = 'index.html';
+            if (!requestPath) requestPath = rootFile;
 
             const segments = requestPath.split('/');
 
@@ -193,12 +193,12 @@ export default class Server extends Context {
             const lastSegment = segments[segments.length - 1];
 
             if (!lastSegment.includes('.')) {
-                segments[segments.length - 1] += '.html';
+                segments[segments.length - 1] += defaultExtension;
             }
             const filePath = path.join(location, ...segments);
 
             if (!filePath.startsWith(location)) {
-                this.sendError(req, res, new NotFound(`Could not ${req.method} ${req.path}`));
+                throw new NotFound()
             } else {
                 // Default Headers
                 if (options.defaultHeaders) {
@@ -211,4 +211,5 @@ export default class Server extends Context {
             }
         });
     }
+    
 }

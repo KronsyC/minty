@@ -1,6 +1,6 @@
 {
   "name": "beetroute",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "commonjs",
   "dependencies": {
     "@mintyjs/http": "^1.1.5",

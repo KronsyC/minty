@@ -14,22 +14,18 @@ const TrieNode_1 = (0, tslib_1.__importDefault)(require("./TrieNode"));
 class Router {
     constructor(config) {
         this.ignoreTrailingSlash = true;
-        this.parameterSeparators = ['-', '+'];
-        this.prefix = '/';
-        config.ignoreTrailingSlash
-            ? (this.ignoreTrailingSlash = config.ignoreTrailingSlash)
-            : null;
-        config.parameterSeparators
-            ? (this.parameterSeparators = config.parameterSeparators)
-            : null;
+        this.parameterSeparators = ["-", "+"];
+        this.prefix = "/";
+        config.ignoreTrailingSlash ? (this.ignoreTrailingSlash = config.ignoreTrailingSlash) : null;
+        config.parameterSeparators ? (this.parameterSeparators = config.parameterSeparators) : null;
         const prefix = (0, urlFormatter_1.formatUrl)(config.prefix || "/", this.ignoreTrailingSlash);
         this.prefix = prefix;
         this.radixTree = new TrieNode_1.default(this, prefix);
         this.radixTree.rootNode = true;
     }
     _addRoute(path, method, handler, overridable) {
-        const location = path.split('/');
-        if (location[0] === '') {
+        const location = path.split("/");
+        if (location[0] === "") {
             this.radixTree.addHandler(method, handler);
         }
         else {
@@ -62,7 +58,7 @@ class Router {
                         hndlr[method] = handler;
                         currentNode.addChild(new TrieNode_1.default(this, part, {
                             handlers: hndlr,
-                            overridable: overridable
+                            overridable: overridable,
                         }));
                     }
                     else {
@@ -88,39 +84,25 @@ class Router {
         }
         // Switch to absolute routing
         path = path.slice(this.prefix.length);
-        const parts = path.split('/');
+        const parts = path.split("/");
         const params = {};
         let brk = false;
         let current = this.radixTree;
         let handler;
         let wildcard;
         let wildcardIndex = 0;
-        // Add the root wildcard as the wildcard
-        if (path === "") {
-            let handler = current.getHandler(method);
-            if (!handler) {
-                // Check if router has a root wildcard
-                if (current.hasChild("**", true)) {
-                    handler = current.getChild("**").getHandler(method);
-                    wildcardIndex = 0;
-                }
-                else {
-                    if (!current.handlers) {
-                        throw new ERR_NOT_FOUND_1.default(`Cannot ${method} /${path}`);
-                    }
-                }
-            }
-            if (!handler)
-                throw new ERR_METHOD_NOT_ALLOWED_1.default(`Cannot ${method} /${path}`);
-            return { handler, params };
-        }
         parts.forEach((part, index) => {
             // A way to fasttrack out of the loop, forEach does not have a break feature
             if (brk)
                 return;
+            // Add the root wildcard as the wildcard
+            if (current.hasChild("**", true)) {
+                wildcard = current.getChild("**");
+                wildcardIndex = 0;
+            }
             // Wildcard takes priority over root wildcard
-            if (current.hasChild('*', true)) {
-                wildcard = current.getChild('*');
+            if (current.hasChild("*", true)) {
+                wildcard = current.getChild("*");
                 wildcardIndex = index;
             }
             // Templatename is the intial name that the user used for the path
@@ -131,14 +113,12 @@ class Router {
                 // The path parts traversed after the wildcard was found
                 const remainingPath = parts.slice(wildcardIndex);
                 params["*"] = remainingPath.join("/");
-                let methodHandler = wildcard.handlers
-                    ? wildcard.handlers[method]
-                    : undefined;
+                let methodHandler = wildcard.handlers ? wildcard.handlers[method] : undefined;
                 if (methodHandler) {
                     handler = methodHandler;
                 }
-                else if (wildcard.handlers && wildcard.handlers['ALL']) {
-                    handler = wildcard.handlers['ALL'];
+                else if (wildcard.handlers && wildcard.handlers["ALL"]) {
+                    handler = wildcard.handlers["ALL"];
                 }
                 else {
                     throw new ERR_METHOD_NOT_ALLOWED_1.default(`Cannot ${method} /${path}`);
@@ -169,7 +149,7 @@ class Router {
                 }
                 current = current.getChild(part);
                 if (current.hasChild("**", true)) {
-                    wildcard = current.getChild('**');
+                    wildcard = current.getChild("**");
                     wildcardIndex = index;
                 }
                 // If this is the last path part, return the handler
@@ -235,12 +215,12 @@ class Router {
     // Parse the path and pull any parameters
     migrate() {
         if (!this.parentRouter) {
-            throw new Error('Cannot Migrate Without a Parent Router');
+            throw new Error("Cannot Migrate Without a Parent Router");
         }
         const parent = this.parentRouter;
         // Traverse the Radix tree and write it to the parent router under the prefix
         const writeChildrenToPath = (node, prefix) => {
-            const path = prefix + '/' + node.name;
+            const path = prefix + "/" + node.name;
             if (node.terminal && node.handlers) {
                 for (let [method, handler] of Object.entries(node.handlers)) {
                     parent.addRoute(path, method, handler);
@@ -250,7 +230,7 @@ class Router {
                 writeChildrenToPath(child, path);
             }
         };
-        writeChildrenToPath(this.radixTree, '/');
+        writeChildrenToPath(this.radixTree, "/");
     }
     /**
      * Routers can have scoped child routers which write their routes to the parent under a prefix
